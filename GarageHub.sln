@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "src\Api\Api.csproj", "{46E61BF3-9944-467E-BB28-C1939D0F9D61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GarageHub.Api", "src\Api\GarageHub.Api.csproj", "{46E61BF3-9944-467E-BB28-C1939D0F9D61}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "src\Application\Application.csproj", "{A6123AAB-3D90-45F4-B60A-B0435C9B2801}"
 EndProject
