@@ -1,6 +1,5 @@
 using Domain.Entities;
 using Domain.Enums;
-using Domain.ValueObjects;
 using Elekto.BrazilianDocuments;
 using FluentValidation;
 
