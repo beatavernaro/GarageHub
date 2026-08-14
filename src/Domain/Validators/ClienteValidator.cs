@@ -30,7 +30,7 @@ public class ClienteValidator : AbstractValidator<Cliente>
 
         RuleFor(x => x.Email)
             .NotEmpty()
-            .Must(email => email.Contains('@'))
+            .EmailAddress()
             .WithMessage("E-mail inválido.");
 
 
