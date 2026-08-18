@@ -1,13 +1,21 @@
+using System.Text.Json.Serialization;
 using GarageHub.Api.Middleware;
-using GarageHub.Infrastructure.DependencyInjection;
+using Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter());
+    });
+//builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddOpenApi();
+
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 var app = builder.Build();
 app.MapOpenApi();

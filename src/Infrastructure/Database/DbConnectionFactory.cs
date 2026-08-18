@@ -1,9 +1,13 @@
+using Application.Interfaces;
 using Npgsql;
+using System.Data;
 
-namespace GarageHub.Infrastructure.Database;
+namespace Infrastructure.Database;
 
-public class DbConnectionFactory(string connectionString)
+public class DbConnectionFactory(string connectionString) : IDbConnectionFactory
 {
-    public NpgsqlConnection CreateConnection()
-        => new(connectionString);
+    public IDbConnection CreateConnection()
+    {
+        return new NpgsqlConnection(connectionString);
+    }
 }

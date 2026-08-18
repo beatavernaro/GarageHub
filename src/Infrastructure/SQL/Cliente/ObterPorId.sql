@@ -1,0 +1,21 @@
+SELECT
+    id,
+    nome,
+    documento,
+    tipo_pessoa,
+    telefone,
+    email,
+    logradouro,
+    numero,
+    complemento,
+    bairro,
+    cidade,
+    estado,
+    cep,
+    criado_por_id,
+    data_criacao,
+    data_alteracao,
+    alterado_por_id,
+    ativo
+FROM clientes
+WHERE id = @Id;

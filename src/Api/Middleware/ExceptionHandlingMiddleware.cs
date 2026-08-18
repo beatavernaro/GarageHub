@@ -1,4 +1,4 @@
-using GarageHub.Domain.Exceptions;
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GarageHub.Api.Middleware;

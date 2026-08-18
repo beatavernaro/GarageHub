@@ -1,0 +1,32 @@
+INSERT INTO veiculos (
+    id,
+    cliente_id,
+    placa,
+    chassi,
+    marca,
+    modelo,
+    cor,
+    ano,
+    quilometragem,
+    criado_por_id,
+    data_criacao,
+    data_alteracao,
+    alterado_por_id,
+    ativo
+)
+VALUES (
+    @Id,
+    @ClienteId,
+    @Placa,
+    @Chassi,
+    @Marca,
+    @Modelo,
+    @Cor,
+    @Ano,
+    @Quilometragem,
+    @CriadoPorId,
+    @DataCriacao,
+    @DataAlteracao,
+    @AlteradoPorId,
+    @Ativo
+);

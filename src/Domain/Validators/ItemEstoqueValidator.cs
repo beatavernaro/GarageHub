@@ -9,7 +9,9 @@ public class ItemEstoqueValidator : AbstractValidator<ItemEstoque>
     {
         RuleFor(x => x.CodigoInterno)
             .NotEmpty()
-            .WithMessage("O código interno é obrigatório.");
+            .WithMessage("O código interno é obrigatório.")
+            .Matches(@"^[A-Z]{3}\d{4}$")
+            .WithMessage("O código interno deve possuir 3 letras e 4 números.");
 
         RuleFor(x => x.Nome)
             .NotEmpty()

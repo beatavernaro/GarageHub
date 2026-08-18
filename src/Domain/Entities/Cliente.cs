@@ -1,17 +1,64 @@
 using Domain.Entities.Base;
 using Domain.Enums;
-using Domain.ValueObjects;
 using Domain.Helpers;
+using Domain.ValueObjects;
 
 namespace Domain.Entities;
 
-public class Cliente(string nome, string cpfCnpj, TipoPessoa tipoPessoa, string telefone, string email) : BaseEntity
+public class Cliente : BaseEntity
 {
-    public string Nome { get; private set; } = nome;
-    public string Documento { get; private set; } = cpfCnpj;
-    public TipoPessoa TipoPessoa { get; private set; } = tipoPessoa;
-    public string Telefone { get; private set; } = telefone;
-    public string Email { get; private set; } = email;
+    public Cliente(
+        string nome,
+        string documento,
+        TipoPessoa tipoPessoa,
+        string telefone,
+        string email,
+        Guid criadoPorId,
+        Endereco? endereco = null)
+        : base(criadoPorId)
+    {
+        Nome = nome;
+        Documento = documento;
+        TipoPessoa = tipoPessoa;
+        Telefone = telefone;
+        Email = email;
+        Endereco = endereco;
+    }
+
+    public Cliente(
+        Guid id,
+        string nome,
+        string documento,
+        TipoPessoa tipoPessoa,
+        string telefone,
+        string email,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo,
+        Endereco? endereco = null)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
+    {
+        Nome = nome;
+        Documento = documento;
+        TipoPessoa = tipoPessoa;
+        Telefone = telefone;
+        Email = email;
+        Endereco = endereco;
+    }
+
+    public string Nome { get; private set; } = string.Empty;
+    public string Documento { get; private set; } = string.Empty;
+    public TipoPessoa TipoPessoa { get; private set; }
+    public string Telefone { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
     public Endereco? Endereco { get; private set; }
 
     public void Normalizar()
@@ -20,6 +67,23 @@ public class Cliente(string nome, string cpfCnpj, TipoPessoa tipoPessoa, string 
         Documento = NormalizationHelper.NormalizarNumeros(Documento);
         Telefone = NormalizationHelper.NormalizarNumeros(Telefone);
         Email = Email.Trim().ToLowerInvariant();
+
         Endereco?.Normalizar();
+    }
+
+    public void Atualizar(
+        string nome,
+        TipoPessoa tipoPessoa,
+        string telefone,
+        string email,
+        Endereco? endereco)
+    {
+        Nome = nome;
+        TipoPessoa = tipoPessoa;
+        Telefone = telefone;
+        Email = email;
+        Endereco = endereco;
+
+        Normalizar();
     }
 }
