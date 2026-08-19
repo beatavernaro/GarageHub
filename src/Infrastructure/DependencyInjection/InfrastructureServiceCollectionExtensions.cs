@@ -27,6 +27,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IVeiculoRepository, VeiculoRepository>();
         services.AddScoped<IVeiculoService, VeiculoService>();
+
+        services.AddScoped<IItemEstoqueRepository, ItemEstoqueRepository>();
+        services.AddScoped<IItemEstoqueService, ItemEstoqueService>();
         return services;
     }
 }
