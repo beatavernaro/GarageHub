@@ -5,25 +5,16 @@ namespace Domain.Entities;
 
 public class OrcamentoItem : BaseEntity
 {
-    public Guid OrcamentoId { get; private set; }
-    public Guid? ServicoId { get; private set; }
-    public Guid? ItemEstoqueId { get; private set; }
-
-    public int Quantidade { get; private set; }
-    public decimal ValorUnitario { get; private set; }
-    public decimal ValorTotal { get; private set; }
-
     public OrcamentoItem(
         Guid orcamentoId,
         Guid? servicoId,
         Guid? itemEstoqueId,
         int quantidade,
         decimal valorUnitario,
-        Guid criadoPorId) : base(criadoPorId)
+        Guid criadoPorId)
+        : base(criadoPorId)
     {
-        if (servicoId.HasValue == itemEstoqueId.HasValue)
-            throw new DomainException(
-                "O item deve ser um serviço ou um item de estoque.");
+        ValidarTipoItem(servicoId, itemEstoqueId);
 
         if (quantidade <= 0)
             throw new DomainException(
@@ -38,27 +29,90 @@ public class OrcamentoItem : BaseEntity
         ItemEstoqueId = itemEstoqueId;
         Quantidade = quantidade;
         ValorUnitario = valorUnitario;
-        ValorTotal = quantidade * valorUnitario;
+
+        RecalcularTotal();
     }
 
-    public void AlterarQuantidade(int quantidade)
+    public OrcamentoItem(
+        Guid id,
+        Guid orcamentoId,
+        Guid? servicoId,
+        Guid? itemEstoqueId,
+        int quantidade,
+        decimal valorUnitario,
+        decimal valorTotal,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
+    {
+        ValidarTipoItem(servicoId, itemEstoqueId);
+
+        OrcamentoId = orcamentoId;
+        ServicoId = servicoId;
+        ItemEstoqueId = itemEstoqueId;
+        Quantidade = quantidade;
+        ValorUnitario = valorUnitario;
+        ValorTotal = valorTotal;
+    }
+
+    public Guid OrcamentoId { get; private set; }
+
+    public Guid? ServicoId { get; private set; }
+
+    public Guid? ItemEstoqueId { get; private set; }
+
+    public int Quantidade { get; private set; }
+
+    public decimal ValorUnitario { get; private set; }
+
+    public decimal ValorTotal { get; private set; }
+
+    public void AlterarQuantidade(
+        int quantidade,
+        Guid usuarioId)
     {
         if (quantidade <= 0)
             throw new DomainException(
                 "A quantidade deve ser maior que zero.");
 
         Quantidade = quantidade;
+
         RecalcularTotal();
+        RegistrarAlteracao(usuarioId);
     }
 
-    public void AlterarValorUnitario(decimal valorUnitario)
+    public void AlterarValorUnitario(
+        decimal valorUnitario,
+        Guid usuarioId)
     {
         if (valorUnitario <= 0)
             throw new DomainException(
                 "O valor unitário deve ser maior que zero.");
 
         ValorUnitario = valorUnitario;
+
         RecalcularTotal();
+        RegistrarAlteracao(usuarioId);
+    }
+
+    private static void ValidarTipoItem(
+        Guid? servicoId,
+        Guid? itemEstoqueId)
+    {
+        if (servicoId.HasValue == itemEstoqueId.HasValue)
+        {
+            throw new DomainException(
+                "O item deve ser um serviço ou um item de estoque.");
+        }
     }
 
     private void RecalcularTotal()

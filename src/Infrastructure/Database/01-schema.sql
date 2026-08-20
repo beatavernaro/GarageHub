@@ -282,6 +282,9 @@ CREATE TABLE orcamentos (
         CHECK (valor_total >= 0)
 );
 
+ALTER TABLE orcamentos
+ADD data_envio_cliente TIMESTAMP NULL;
+
 
 -- ============================================
 -- ITENS DO ORÇAMENTO

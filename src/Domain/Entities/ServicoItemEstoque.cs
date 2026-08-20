@@ -59,7 +59,6 @@ public class ServicoItemEstoque : BaseEntity
                 "A quantidade deve ser maior que zero.");
 
         Quantidade = quantidade;
-
         RegistrarAlteracao(usuarioId);
     }
 }

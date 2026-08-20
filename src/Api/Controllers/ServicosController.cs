@@ -1,5 +1,6 @@
 using Application.DTOs.Servico;
 using Application.Interfaces.Services;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GarageHub.Api.Controllers;
@@ -9,10 +10,12 @@ namespace GarageHub.Api.Controllers;
 public class ServicosController(
     IServicoService servicoService) : ControllerBase
 {
-    private readonly IServicoService _servicoService =
-        servicoService;
+    private readonly IServicoService _servicoService = servicoService;
 
     [HttpGet]
+    [EndpointSummary("Obtém todos os serviços")]
+    [EndpointDescription("Retorna todos os serviços ativos cadastrados.")]
+    [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ServicoDto>>> ObterTodos()
     {
         var servicos =
@@ -22,11 +25,13 @@ public class ServicosController(
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ServicoDto>> ObterPorId(
-        Guid id)
+    [EndpointSummary("Obtém um serviço pelo ID")]
+    [EndpointDescription("Retorna os dados de um serviço cadastrado.")]
+    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ServicoDto>> ObterPorId([FromRoute] Guid id)
     {
-        var servico =
-            await _servicoService.ObterPorIdAsync(id);
+        var servico = await _servicoService.ObterPorIdAsync(id);
 
         if (servico is null)
             return NotFound();
@@ -35,11 +40,14 @@ public class ServicosController(
     }
 
     [HttpGet("nome/{nome}")]
-    public async Task<ActionResult<ServicoDto>> ObterPorNome(
-        string nome)
+    [EndpointSummary("Obtém um serviço pelo nome")]
+    [EndpointDescription(
+        "Retorna os dados de um serviço cadastrado com o nome informado.")]
+    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ServicoDto>> ObterPorNome([FromRoute] string nome)
     {
-        var servico =
-            await _servicoService.ObterPorNomeAsync(nome);
+        var servico = await _servicoService.ObterPorNomeAsync(nome);
 
         if (servico is null)
             return NotFound();
@@ -48,11 +56,13 @@ public class ServicosController(
     }
 
     [HttpPost]
-    public async Task<ActionResult<ServicoDto>> Criar(
-        CriarServicoDto dto)
+    [EndpointSummary("Cria um novo serviço")]
+    [EndpointDescription("Cadastra um novo serviço.")]
+    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ServicoDto>> Criar([FromBody] CriarServicoDto dto)
     {
-        var servico =
-            await _servicoService.CriarAsync(dto);
+        var servico = await _servicoService.CriarAsync(dto);
 
         return CreatedAtAction(
             nameof(ObterPorId),
@@ -61,9 +71,12 @@ public class ServicosController(
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Atualizar(
-        Guid id,
-        AtualizarServicoDto dto)
+    [EndpointSummary("Atualiza um serviço")]
+    [EndpointDescription("Atualiza os dados cadastrais de um serviço.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Atualizar([FromRoute] Guid id, [FromBody] AtualizarServicoDto dto)
     {
         await _servicoService.AtualizarAsync(id, dto);
 
@@ -71,57 +84,75 @@ public class ServicosController(
     }
 
     [HttpPatch("{id:guid}/preco")]
-    public async Task<IActionResult> AlterarPreco(
-        Guid id,
-        [FromQuery] decimal novoPreco)
+    [EndpointSummary("Altera o preço de um serviço")]
+    [EndpointDescription("Atualiza apenas o preço do serviço informado.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AlterarPreco([FromRoute] Guid id, [FromQuery] decimal novoPreco)
     {
-        await _servicoService.AlterarPrecoAsync(
-            id,
-            novoPreco);
+        await _servicoService.AlterarPrecoAsync(id, novoPreco);
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [EndpointSummary("Altera o status de um serviço")]
+    [EndpointDescription("Atualiza apenas o status do serviço informado.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AlterarStatus([FromRoute] Guid id, [FromQuery] StatusServico status)
+    {
+        await _servicoService.AlterarStatusAsync(id, status);
 
         return NoContent();
     }
 
     [HttpPost("{id:guid}/itens-estoque")]
-    public async Task<IActionResult> AdicionarItemEstoque(
-        Guid id,
-        AdicionarServicoItemEstoqueDto dto)
+    [EndpointSummary("Adiciona um item de estoque a um serviço")]
+    [EndpointDescription("Vincula uma peça ou insumo ao serviço com a quantidade informada.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AdicionarItemEstoque([FromRoute] Guid id, [FromBody] AdicionarServicoItemEstoqueDto dto)
     {
-        await _servicoService.AdicionarItemEstoqueAsync(
-            id,
-            dto);
+        await _servicoService.AdicionarItemEstoqueAsync(id, dto);
 
         return NoContent();
     }
 
     [HttpPatch("{id:guid}/itens-estoque/{itemEstoqueId:guid}")]
-    public async Task<IActionResult> AlterarQuantidadeItemEstoque(
-        Guid id,
-        Guid itemEstoqueId,
-        [FromQuery] int quantidade)
+    [EndpointSummary("Altera a quantidade de um item de estoque no serviço")]
+    [EndpointDescription("Atualiza a quantidade de uma peça ou insumo vinculado ao serviço.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AlterarQuantidadeItemEstoque([FromRoute] Guid id, [FromRoute] Guid itemEstoqueId, [FromQuery] int quantidade)
     {
-        await _servicoService.AlterarQuantidadeItemEstoqueAsync(
-            id,
-            itemEstoqueId,
-            quantidade);
+        await _servicoService.AlterarQuantidadeItemEstoqueAsync(id, itemEstoqueId, quantidade);
 
         return NoContent();
     }
 
     [HttpDelete("{id:guid}/itens-estoque/{itemEstoqueId:guid}")]
-    public async Task<IActionResult> RemoverItemEstoque(
-        Guid id,
-        Guid itemEstoqueId)
+    [EndpointSummary("Remove um item de estoque de um serviço")]
+    [EndpointDescription("Remove o vínculo entre uma peça ou insumo e o serviço.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoverItemEstoque([FromRoute] Guid id, [FromRoute] Guid itemEstoqueId)
     {
-        await _servicoService.RemoverItemEstoqueAsync(
-            id,
-            itemEstoqueId);
+        await _servicoService.RemoverItemEstoqueAsync(id, itemEstoqueId);
 
         return NoContent();
     }
 
     [HttpPatch("{id:guid}/inativar")]
-    public async Task<IActionResult> Inativar(Guid id)
+    [EndpointSummary("Inativa um serviço")]
+    [EndpointDescription("Altera o serviço para inativo sem removê-lo do banco de dados.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Inativar([FromRoute] Guid id)
     {
         await _servicoService.InativarAsync(id);
 
@@ -129,7 +160,11 @@ public class ServicosController(
     }
 
     [HttpPatch("{id:guid}/ativar")]
-    public async Task<IActionResult> Ativar(Guid id)
+    [EndpointSummary("Ativa um serviço")]
+    [EndpointDescription("Altera o serviço para ativo.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Ativar([FromRoute] Guid id)
     {
         await _servicoService.AtivarAsync(id);
 

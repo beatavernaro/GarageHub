@@ -7,15 +7,11 @@ using Infrastructure.Mappers;
 
 namespace Infrastructure.Repositories;
 
-public class ServicoRepository(
-    IDbConnectionFactory connectionFactory,
-    SqlFileReader sqlFileReader) : IServicoRepository
+public class ServicoRepository(IDbConnectionFactory connectionFactory, SqlFileReader sqlFileReader) : IServicoRepository
 {
-    private readonly IDbConnectionFactory _connectionFactory =
-        connectionFactory;
+    private readonly IDbConnectionFactory _connectionFactory = connectionFactory;
 
-    private readonly SqlFileReader _sqlFileReader =
-        sqlFileReader;
+    private readonly SqlFileReader _sqlFileReader = sqlFileReader;
 
     public async Task<Servico?> ObterPorIdAsync(Guid id)
     {
@@ -23,12 +19,9 @@ public class ServicoRepository(
 
         var sql = _sqlFileReader.Get("Servico/ObterPorId.sql");
 
-        using var multi = await connection.QueryMultipleAsync(
-            sql,
-            new { Id = id });
+        using var multi = await connection.QueryMultipleAsync(sql, new { Id = id });
 
-        var model =
-            await multi.ReadSingleOrDefaultAsync<ServicoDbModel>();
+        var model = await multi.ReadSingleOrDefaultAsync<ServicoDbModel>();
 
         if (model is null)
             return null;
@@ -47,8 +40,7 @@ public class ServicoRepository(
 
         var sql = _sqlFileReader.Get("Servico/ObterTodos.sql");
 
-        var models =
-            await connection.QueryAsync<ServicoDbModel>(sql);
+        var models = await connection.QueryAsync<ServicoDbModel>(sql);
 
         return models.Select(x => x.ToEntity());
     }
@@ -59,10 +51,7 @@ public class ServicoRepository(
 
         var sql = _sqlFileReader.Get("Servico/ObterPorNome.sql");
 
-        var model =
-            await connection.QuerySingleOrDefaultAsync<ServicoDbModel>(
-                sql,
-                new { Nome = nome });
+        var model = await connection.QuerySingleOrDefaultAsync<ServicoDbModel>(sql, new { Nome = nome });
 
         return model?.ToEntity();
     }
@@ -73,9 +62,7 @@ public class ServicoRepository(
 
         var sql = _sqlFileReader.Get("Servico/Adicionar.sql");
 
-        await connection.ExecuteAsync(
-            sql,
-            MapearParametros(servico));
+        await connection.ExecuteAsync(sql, MapearParametros(servico));
     }
 
     public async Task AtualizarAsync(Servico servico)
@@ -84,108 +71,58 @@ public class ServicoRepository(
 
         var sql = _sqlFileReader.Get("Servico/Atualizar.sql");
 
-        await connection.ExecuteAsync(
-            sql,
-            MapearParametros(servico));
+        await connection.ExecuteAsync(sql, MapearParametros(servico));
     }
 
-    public async Task AtualizarItensEstoqueAsync(Servico servico)
+    public async Task AdicionarItemEstoqueAsync(ServicoItemEstoque item)
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        connection.Open();
+        var sql = _sqlFileReader.Get("Servico/AdicionarItemEstoque.sql");
 
-        using var transaction = connection.BeginTransaction();
-
-        try
+        await connection.ExecuteAsync(sql, new
         {
-            var itensAtivos = servico.ItensEstoque
-                .Where(x => x.Ativo)
-                .ToList();
+            item.Id,
+            item.ServicoId,
+            item.ItemEstoqueId,
+            item.Quantidade,
+            item.CriadoPorId,
+            item.DataCriacao,
+            item.DataAlteracao,
+            item.AlteradoPorId,
+            item.Ativo
+        });
+    }
 
-            var idsAtivos = itensAtivos
-                .Select(x => x.Id)
-                .ToList();
+    public async Task AtualizarItemEstoqueAsync(ServicoItemEstoque item)
+    {
+        using var connection = _connectionFactory.CreateConnection();
 
-            var sqlItensExistentes =
-                _sqlFileReader.Get("Servico/ObterItensEstoque.sql");
+        var sql = _sqlFileReader.Get("Servico/AtualizarItemEstoque.sql");
 
-            var itensExistentes =
-                (
-                    await connection.QueryAsync<Guid>(
-                        sqlItensExistentes,
-                        new { ServicoId = servico.Id },
-                        transaction)
-                ).ToList();
-
-            var sqlInativar =
-                _sqlFileReader.Get("Servico/InativarItemEstoque.sql");
-
-            foreach (var id in itensExistentes)
+        await connection.ExecuteAsync(sql,
+            new
             {
-                if (!idsAtivos.Contains(id))
-                {
-                    await connection.ExecuteAsync(
-                        sqlInativar,
-                        new
-                        {
-                            Id = id,
-                            DataAlteracao = servico.DataAlteracao,
-                            AlteradoPorId = servico.AlteradoPorId
-                        },
-                        transaction);
-                }
-            }
+                item.Id,
+                item.Quantidade,
+                item.DataAlteracao,
+                item.AlteradoPorId,
+                item.Ativo
+            });
+    }
 
-            var sqlAdicionar =
-                _sqlFileReader.Get("Servico/AdicionarItemEstoque.sql");
+    public async Task InativarItemEstoqueAsync(Guid itemId, DateTime dataAlteracao, Guid usuarioId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
 
-            var sqlAtualizar =
-                _sqlFileReader.Get("Servico/AtualizarItemEstoque.sql");
+        var sql = _sqlFileReader.Get("Servico/InativarItemEstoque.sql");
 
-            foreach (var item in itensAtivos)
-            {
-                if (itensExistentes.Contains(item.Id))
-                {
-                    await connection.ExecuteAsync(
-                        sqlAtualizar,
-                        new
-                        {
-                            item.Id,
-                            item.Quantidade,
-                            item.DataAlteracao,
-                            item.AlteradoPorId,
-                            item.Ativo
-                        },
-                        transaction);
-                }
-                else
-                {
-                    await connection.ExecuteAsync(
-                        sqlAdicionar,
-                        new
-                        {
-                            item.Id,
-                            item.ServicoId,
-                            item.ItemEstoqueId,
-                            item.Quantidade,
-                            item.CriadoPorId,
-                            item.DataCriacao,
-                            item.DataAlteracao,
-                            item.AlteradoPorId,
-                            item.Ativo
-                        },
-                        transaction);
-                }
-            }
-
-            transaction.Commit();
-        }
-        catch
+        await connection.ExecuteAsync(sql, new
         {
-            transaction.Rollback();
-            throw;
-        }
+            Id = itemId,
+            DataAlteracao = dataAlteracao,
+            AlteradoPorId = usuarioId
+        });
     }
 
     private static object MapearParametros(Servico servico)

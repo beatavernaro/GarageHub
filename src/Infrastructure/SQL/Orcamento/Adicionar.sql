@@ -1,0 +1,32 @@
+INSERT INTO orcamentos (
+    id,
+    cliente_id,
+    veiculo_id,
+    status,
+    desconto,
+    valor_total,
+    data_envio_cliente,
+    data_aprovacao,
+    data_rejeicao,
+    criado_por_id,
+    data_criacao,
+    data_alteracao,
+    alterado_por_id,
+    ativo
+)
+VALUES (
+    @Id,
+    @ClienteId,
+    @VeiculoId,
+    @Status,
+    @Desconto,
+    @ValorTotal,
+    @DataEnvioCliente,
+    @DataAprovacao,
+    @DataRejeicao,
+    @CriadoPorId,
+    @DataCriacao,
+    @DataAlteracao,
+    @AlteradoPorId,
+    @Ativo
+);

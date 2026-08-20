@@ -14,5 +14,14 @@ public interface IServicoRepository
 
     Task AtualizarAsync(Servico servico);
 
-    Task AtualizarItensEstoqueAsync(Servico servico);
+    Task AdicionarItemEstoqueAsync(
+        ServicoItemEstoque item);
+
+    Task AtualizarItemEstoqueAsync(
+        ServicoItemEstoque item);
+
+    Task InativarItemEstoqueAsync(
+        Guid itemId,
+        DateTime dataAlteracao,
+        Guid usuarioId);
 }

@@ -69,14 +69,20 @@ public class Servico : BaseEntity
     public void Atualizar(
         string nome,
         string? descricao,
-        StatusServico status,
         Guid usuarioId)
     {
         Nome = nome;
         Descricao = descricao;
-        Status = status;
 
         Normalizar();
+        RegistrarAlteracao(usuarioId);
+    }
+
+    public void AlterarStatus(
+        StatusServico novoStatus,
+        Guid usuarioId)
+    {
+        Status = novoStatus;
         RegistrarAlteracao(usuarioId);
     }
 
@@ -89,7 +95,6 @@ public class Servico : BaseEntity
                 "O preço deve ser maior que zero.");
 
         Preco = novoPreco;
-
         RegistrarAlteracao(usuarioId);
     }
 
@@ -112,13 +117,8 @@ public class Servico : BaseEntity
                 x.Ativo);
 
         if (itemExistente is not null)
-        {
-            itemExistente.AlterarQuantidade(
-                itemExistente.Quantidade + quantidade,
-                criadoPorId);
-
-            return;
-        }
+            throw new DomainException(
+                "O item de estoque já está vinculado ao serviço.");
 
         _itensEstoque.Add(
             new ServicoItemEstoque(
@@ -158,7 +158,9 @@ public class Servico : BaseEntity
             throw new DomainException(
                 "Item de estoque não encontrado no serviço.");
 
-        item.AlterarQuantidade(quantidade, usuarioId);
+        item.AlterarQuantidade(
+            quantidade,
+            usuarioId);
     }
 
     public void CarregarItensEstoque(

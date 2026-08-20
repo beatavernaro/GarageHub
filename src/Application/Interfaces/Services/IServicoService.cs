@@ -1,4 +1,5 @@
 using Application.DTOs.Servico;
+using Domain.Enums;
 
 namespace Application.Interfaces.Services;
 
@@ -20,21 +21,22 @@ public interface IServicoService
         Guid id,
         decimal novoPreco);
 
+    Task AlterarStatusAsync(
+        Guid id,
+        StatusServico status);
+
     Task AdicionarItemEstoqueAsync(
         Guid id,
         AdicionarServicoItemEstoqueDto dto);
-
-    Task RemoverItemEstoqueAsync(
-        Guid id,
-        Guid itemEstoqueId);
 
     Task AlterarQuantidadeItemEstoqueAsync(
         Guid id,
         Guid itemEstoqueId,
         int quantidade);
 
-    Task AtualizarItensEstoqueAsync(
-        Guid id);
+    Task RemoverItemEstoqueAsync(
+        Guid id,
+        Guid itemEstoqueId);
 
     Task InativarAsync(Guid id);
 
