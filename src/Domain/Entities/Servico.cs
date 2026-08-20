@@ -4,46 +4,59 @@ using Domain.Exceptions;
 
 namespace Domain.Entities;
 
-public class Servico(string nome, string? descricao, decimal preco, StatusServico status, Guid criadoPorId) : BaseEntity(criadoPorId)
+public class Servico : BaseEntity
 {
-    public string Nome { get; private set; } = nome;
-    public string? Descricao { get; private set; } = descricao;
-    public decimal Preco { get; private set; } = preco;
-    public StatusServico Status { get; private set; } = status;
     private readonly List<ServicoItemEstoque> _itensEstoque = [];
-    private readonly Guid criadoPorId = criadoPorId;
 
-    public IReadOnlyCollection<ServicoItemEstoque> ItensEstoque => _itensEstoque;
-
-    public void AlterarPreco(decimal novoPreco)
+    public Servico(
+        string nome,
+        string? descricao,
+        decimal preco,
+        StatusServico status,
+        Guid criadoPorId)
+        : base(criadoPorId)
     {
-        if (novoPreco <= 0)
-            throw new DomainException("O preço deve ser maior que zero.");
-        Preco = novoPreco;
+        Nome = nome;
+        Descricao = descricao;
+        Preco = preco;
+        Status = status;
     }
 
-    public void AdicionarPecaInsumo(ItemEstoque item, int quantidade)
+    public Servico(
+        Guid id,
+        string nome,
+        string? descricao,
+        decimal preco,
+        StatusServico status,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
     {
-        if (quantidade <= 0)
-            throw new DomainException("A quantidade deve ser maior que zero.");
-        if (!item.Ativo)
-            throw new DomainException("O item de estoque deve estar ativo.");
-
-        if (item.Estoque < quantidade)
-            throw new DomainException("Não é possível adicionar mais itens do que o disponível em estoque.");
-
-        var itemExistente = _itensEstoque
-        .FirstOrDefault(x => x.ItemEstoqueId == item.Id);
-
-        if (itemExistente is not null)
-        {
-            itemExistente.AlterarQuantidade(itemExistente.Quantidade + quantidade);
-            return;
-        }
-
-        _itensEstoque.Add(
-            new ServicoItemEstoque(Id, item.Id, quantidade, criadoPorId));
+        Nome = nome;
+        Descricao = descricao;
+        Preco = preco;
+        Status = status;
     }
+
+    public string Nome { get; private set; } = string.Empty;
+
+    public string? Descricao { get; private set; }
+
+    public decimal Preco { get; private set; }
+
+    public StatusServico Status { get; private set; }
+
+    public IReadOnlyCollection<ServicoItemEstoque> ItensEstoque =>
+        _itensEstoque;
 
     public void Normalizar()
     {
@@ -51,5 +64,107 @@ public class Servico(string nome, string? descricao, decimal preco, StatusServic
 
         if (!string.IsNullOrWhiteSpace(Descricao))
             Descricao = Descricao.Trim();
+    }
+
+    public void Atualizar(
+        string nome,
+        string? descricao,
+        StatusServico status,
+        Guid usuarioId)
+    {
+        Nome = nome;
+        Descricao = descricao;
+        Status = status;
+
+        Normalizar();
+        RegistrarAlteracao(usuarioId);
+    }
+
+    public void AlterarPreco(
+        decimal novoPreco,
+        Guid usuarioId)
+    {
+        if (novoPreco <= 0)
+            throw new DomainException(
+                "O preço deve ser maior que zero.");
+
+        Preco = novoPreco;
+
+        RegistrarAlteracao(usuarioId);
+    }
+
+    public void AdicionarPecaInsumo(
+        ItemEstoque item,
+        int quantidade,
+        Guid criadoPorId)
+    {
+        if (quantidade <= 0)
+            throw new DomainException(
+                "A quantidade deve ser maior que zero.");
+
+        if (!item.Ativo)
+            throw new DomainException(
+                "O item de estoque deve estar ativo.");
+
+        var itemExistente = _itensEstoque
+            .FirstOrDefault(x =>
+                x.ItemEstoqueId == item.Id &&
+                x.Ativo);
+
+        if (itemExistente is not null)
+        {
+            itemExistente.AlterarQuantidade(
+                itemExistente.Quantidade + quantidade,
+                criadoPorId);
+
+            return;
+        }
+
+        _itensEstoque.Add(
+            new ServicoItemEstoque(
+                Id,
+                item.Id,
+                quantidade,
+                criadoPorId));
+    }
+
+    public void RemoverItemEstoque(
+        Guid itemEstoqueId,
+        Guid usuarioId)
+    {
+        var item = _itensEstoque
+            .FirstOrDefault(x =>
+                x.ItemEstoqueId == itemEstoqueId &&
+                x.Ativo);
+
+        if (item is null)
+            throw new DomainException(
+                "Item de estoque não encontrado no serviço.");
+
+        item.Desativar(usuarioId);
+    }
+
+    public void AlterarQuantidadeItemEstoque(
+        Guid itemEstoqueId,
+        int quantidade,
+        Guid usuarioId)
+    {
+        var item = _itensEstoque
+            .FirstOrDefault(x =>
+                x.ItemEstoqueId == itemEstoqueId &&
+                x.Ativo);
+
+        if (item is null)
+            throw new DomainException(
+                "Item de estoque não encontrado no serviço.");
+
+        item.AlterarQuantidade(quantidade, usuarioId);
+    }
+
+    public void CarregarItensEstoque(
+        IEnumerable<ServicoItemEstoque> itens)
+    {
+        _itensEstoque.Clear();
+        _itensEstoque.AddRange(itens);
     }
 }

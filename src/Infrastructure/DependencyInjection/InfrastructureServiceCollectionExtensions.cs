@@ -30,6 +30,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IItemEstoqueRepository, ItemEstoqueRepository>();
         services.AddScoped<IItemEstoqueService, ItemEstoqueService>();
+
+        services.AddScoped<IServicoRepository, ServicoRepository>();
+        services.AddScoped<IServicoService, ServicoService>();
         return services;
     }
 }
