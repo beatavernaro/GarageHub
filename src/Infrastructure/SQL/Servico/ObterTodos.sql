@@ -3,7 +3,6 @@ SELECT
     nome,
     descricao,
     preco,
-    status,
     criado_por_id,
     data_criacao,
     data_alteracao,

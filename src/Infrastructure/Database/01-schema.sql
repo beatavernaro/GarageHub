@@ -7,12 +7,10 @@ CREATE TABLE usuarios (
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
-
     criado_por_id UUID NOT NULL,
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_usuarios_criado_por
@@ -31,7 +29,6 @@ CREATE TABLE usuarios (
 
 CREATE TABLE clientes (
     id UUID PRIMARY KEY,
-
     nome VARCHAR(150) NOT NULL,
     documento VARCHAR(14) NOT NULL UNIQUE,
     tipo_pessoa INTEGER NOT NULL,
@@ -51,7 +48,6 @@ CREATE TABLE clientes (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_clientes_criado_por
@@ -73,9 +69,7 @@ CREATE TABLE clientes (
 
 CREATE TABLE veiculos (
     id UUID PRIMARY KEY,
-
     cliente_id UUID NOT NULL,
-
     placa VARCHAR(7) NOT NULL UNIQUE,
     chassi VARCHAR(17),
     marca VARCHAR(100) NOT NULL,
@@ -88,7 +82,6 @@ CREATE TABLE veiculos (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_veiculos_cliente
@@ -117,7 +110,6 @@ CREATE TABLE veiculos (
 
 CREATE TABLE itens_estoque (
     id UUID PRIMARY KEY,
-
     codigo_interno VARCHAR(7) NOT NULL UNIQUE,
     nome VARCHAR(150) NOT NULL,
     descricao VARCHAR(500),
@@ -129,7 +121,6 @@ CREATE TABLE itens_estoque (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_itens_estoque_criado_por
@@ -160,17 +151,14 @@ CREATE TABLE itens_estoque (
 
 CREATE TABLE servicos (
     id UUID PRIMARY KEY,
-
     nome VARCHAR(150) NOT NULL,
     descricao VARCHAR(500),
     preco NUMERIC(12,2) NOT NULL,
-    status INTEGER NOT NULL,
 
     criado_por_id UUID NOT NULL,
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_servicos_criado_por
@@ -182,52 +170,7 @@ CREATE TABLE servicos (
         REFERENCES usuarios(id),
 
     CONSTRAINT ck_servicos_preco
-        CHECK (preco > 0),
-
-    CONSTRAINT ck_servicos_status
-        CHECK (status IN (0, 1, 2))
-);
-
-
--- ============================================
--- SERVIÇO x ITEM DE ESTOQUE
--- ============================================
-
-CREATE TABLE servicos_itens_estoque (
-    id UUID PRIMARY KEY,
-
-    servico_id UUID NOT NULL,
-    item_estoque_id UUID NOT NULL,
-    quantidade INTEGER NOT NULL,
-
-    criado_por_id UUID NOT NULL,
-    data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    data_alteracao TIMESTAMPTZ,
-    alterado_por_id UUID,
-
-    ativo BOOLEAN NOT NULL DEFAULT TRUE,
-
-    CONSTRAINT fk_servicos_itens_servico
-        FOREIGN KEY (servico_id)
-        REFERENCES servicos(id),
-
-    CONSTRAINT fk_servicos_itens_estoque
-        FOREIGN KEY (item_estoque_id)
-        REFERENCES itens_estoque(id),
-
-    CONSTRAINT fk_servicos_itens_criado_por
-        FOREIGN KEY (criado_por_id)
-        REFERENCES usuarios(id),
-
-    CONSTRAINT fk_servicos_itens_alterado_por
-        FOREIGN KEY (alterado_por_id)
-        REFERENCES usuarios(id),
-
-    CONSTRAINT ck_servicos_itens_quantidade
-        CHECK (quantidade > 0),
-
-    CONSTRAINT uq_servicos_item_estoque
-        UNIQUE (servico_id, item_estoque_id)
+        CHECK (preco > 0)
 );
 
 
@@ -237,15 +180,12 @@ CREATE TABLE servicos_itens_estoque (
 
 CREATE TABLE orcamentos (
     id UUID PRIMARY KEY,
-
     cliente_id UUID NOT NULL,
     veiculo_id UUID NOT NULL,
-
     status INTEGER NOT NULL DEFAULT 0,
-
     desconto NUMERIC(12,2) NOT NULL DEFAULT 0,
     valor_total NUMERIC(12,2) NOT NULL DEFAULT 0,
-
+    data_envio_cliente TIMESTAMPTZ,
     data_aprovacao TIMESTAMPTZ,
     data_rejeicao TIMESTAMPTZ,
 
@@ -253,7 +193,6 @@ CREATE TABLE orcamentos (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_orcamentos_cliente
@@ -282,9 +221,6 @@ CREATE TABLE orcamentos (
         CHECK (valor_total >= 0)
 );
 
-ALTER TABLE orcamentos
-ADD data_envio_cliente TIMESTAMP NULL;
-
 
 -- ============================================
 -- ITENS DO ORÇAMENTO
@@ -292,12 +228,9 @@ ADD data_envio_cliente TIMESTAMP NULL;
 
 CREATE TABLE orcamentos_itens (
     id UUID PRIMARY KEY,
-
     orcamento_id UUID NOT NULL,
-
     servico_id UUID,
     item_estoque_id UUID,
-
     quantidade INTEGER NOT NULL,
     valor_unitario NUMERIC(12,2) NOT NULL,
     valor_total NUMERIC(12,2) NOT NULL,
@@ -306,7 +239,6 @@ CREATE TABLE orcamentos_itens (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_orcamentos_itens_orcamento
@@ -353,16 +285,12 @@ CREATE TABLE orcamentos_itens (
 
 CREATE TABLE ordens_servico (
     id UUID PRIMARY KEY,
-
     orcamento_id UUID NOT NULL,
     cliente_id UUID NOT NULL,
     veiculo_id UUID NOT NULL,
-
     status INTEGER NOT NULL DEFAULT 0,
-
     desconto NUMERIC(12,2) NOT NULL DEFAULT 0,
     valor_total NUMERIC(12,2) NOT NULL DEFAULT 0,
-
     data_inicio TIMESTAMPTZ,
     data_finalizacao TIMESTAMPTZ,
     data_entrega TIMESTAMPTZ,
@@ -371,7 +299,6 @@ CREATE TABLE ordens_servico (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_ordens_servico_orcamento
@@ -411,14 +338,12 @@ CREATE TABLE ordens_servico (
 
 CREATE TABLE ordens_servico_itens (
     id UUID PRIMARY KEY,
-
     ordem_servico_id UUID NOT NULL,
     servico_id UUID NOT NULL,
 
     -- SNAPSHOT DO SERVIÇO
     nome_servico VARCHAR(150) NOT NULL,
     descricao_servico VARCHAR(500),
-
     quantidade INTEGER NOT NULL,
     valor_unitario NUMERIC(12,2) NOT NULL,
     valor_total NUMERIC(12,2) NOT NULL,
@@ -427,7 +352,6 @@ CREATE TABLE ordens_servico_itens (
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
-
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_ordens_servico_itens_ordem

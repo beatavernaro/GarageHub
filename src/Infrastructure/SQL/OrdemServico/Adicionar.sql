@@ -1,0 +1,34 @@
+INSERT INTO ordens_servico (
+    id,
+    orcamento_id,
+    cliente_id,
+    veiculo_id,
+    status,
+    desconto,
+    valor_total,
+    data_inicio,
+    data_finalizacao,
+    data_entrega,
+    criado_por_id,
+    data_criacao,
+    data_alteracao,
+    alterado_por_id,
+    ativo
+)
+VALUES (
+    @Id,
+    @OrcamentoId,
+    @ClienteId,
+    @VeiculoId,
+    @Status,
+    @Desconto,
+    @ValorTotal,
+    @DataInicio,
+    @DataFinalizacao,
+    @DataEntrega,
+    @CriadoPorId,
+    @DataCriacao,
+    @DataAlteracao,
+    @AlteradoPorId,
+    @Ativo
+);

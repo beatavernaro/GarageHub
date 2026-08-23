@@ -198,7 +198,6 @@ INSERT INTO servicos (
     nome,
     descricao,
     preco,
-    status,
     criado_por_id,
     data_criacao,
     ativo
@@ -209,7 +208,6 @@ VALUES
     'Troca de Pastilhas de Freio',
     'Substituição das pastilhas de freio dianteiras',
     250.00,
-    0,
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE
@@ -219,42 +217,6 @@ VALUES
     'Troca de Óleo',
     'Troca do óleo e verificação do nível',
     120.00,
-    0,
-    '00000000-0000-0000-0000-000000000001',
-    NOW(),
-    TRUE
-)
-ON CONFLICT (id) DO NOTHING;
-
-
--- ============================================
--- SERVIÇOS x ITENS DE ESTOQUE
--- ============================================
-
-INSERT INTO servicos_itens_estoque (
-    id,
-    servico_id,
-    item_estoque_id,
-    quantidade,
-    criado_por_id,
-    data_criacao,
-    ativo
-)
-VALUES
-(
-    '50000000-0000-0000-0000-000000000001',
-    '40000000-0000-0000-0000-000000000001',
-    '30000000-0000-0000-0000-000000000001',
-    1,
-    '00000000-0000-0000-0000-000000000001',
-    NOW(),
-    TRUE
-),
-(
-    '50000000-0000-0000-0000-000000000002',
-    '40000000-0000-0000-0000-000000000002',
-    '30000000-0000-0000-0000-000000000002',
-    4,
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE
@@ -424,4 +386,3 @@ VALUES
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;
-

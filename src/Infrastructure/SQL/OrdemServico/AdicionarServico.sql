@@ -1,0 +1,32 @@
+INSERT INTO ordens_servico_servicos (
+    id,
+    ordem_servico_id,
+    servico_id,
+    nome_servico,
+    descricao_servico,
+    quantidade,
+    valor_unitario,
+    valor_total,
+    status,
+    criado_por_id,
+    data_criacao,
+    data_alteracao,
+    alterado_por_id,
+    ativo
+)
+VALUES (
+    @Id,
+    @OrdemServicoId,
+    @ServicoId,
+    @NomeServico,
+    @DescricaoServico,
+    @Quantidade,
+    @ValorUnitario,
+    @ValorTotal,
+    @Status,
+    @CriadoPorId,
+    @DataCriacao,
+    @DataAlteracao,
+    @AlteradoPorId,
+    @Ativo
+);

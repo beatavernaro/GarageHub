@@ -52,10 +52,24 @@ public class OrcamentoRepository(
         var sql =
             _sqlFileReader.Get("Orcamento/ObterTodos.sql");
 
-        var models =
-            await connection.QueryAsync<OrcamentoDbModel>(sql);
+        using var multi =
+            await connection.QueryMultipleAsync(sql);
 
-        return models.Select(x => x.ToEntity());
+        var orcamentos =
+            (await multi.ReadAsync<OrcamentoDbModel>()).ToList();
+
+        var itens =
+            (await multi.ReadAsync<OrcamentoItemDbModel>()).ToList();
+
+        foreach (var orcamento in orcamentos)
+        {
+            orcamento.Itens =
+            [
+                .. itens.Where(x => x.OrcamentoId == orcamento.Id)
+            ];
+        }
+
+        return orcamentos.Select(x => x.ToEntity());
     }
 
     public async Task<IEnumerable<Orcamento>> ObterPorClienteIdAsync(
@@ -103,121 +117,121 @@ public class OrcamentoRepository(
 
     public async Task AtualizarItensAsync(
     Orcamento orcamento)
-{
-    using var connection =
-        _connectionFactory.CreateConnection();
-
-    connection.Open();
-
-    using var transaction =
-        connection.BeginTransaction();
-
-    try
     {
-        var itensAtivos = orcamento.Itens
-            .Where(x => x.Ativo)
-            .ToList();
+        using var connection =
+            _connectionFactory.CreateConnection();
 
-        var idsAtivos = itensAtivos
-            .Select(x => x.Id)
-            .ToHashSet();
+        connection.Open();
 
-        var sqlItensExistentes =
-            _sqlFileReader.Get(
-                "Orcamento/ObterIdsItens.sql");
+        using var transaction =
+            connection.BeginTransaction();
 
-        var idsExistentes =
-            (
-                await connection.QueryAsync<Guid>(
-                    sqlItensExistentes,
-                    new { OrcamentoId = orcamento.Id },
-                    transaction)
-            ).ToHashSet();
-
-        var sqlInativar =
-            _sqlFileReader.Get(
-                "Orcamento/InativarItem.sql");
-
-        foreach (var id in idsExistentes)
+        try
         {
-            if (!idsAtivos.Contains(id))
+            var itensAtivos = orcamento.Itens
+                .Where(x => x.Ativo)
+                .ToList();
+
+            var idsAtivos = itensAtivos
+                .Select(x => x.Id)
+                .ToHashSet();
+
+            var sqlItensExistentes =
+                _sqlFileReader.Get(
+                    "Orcamento/ObterIdsItens.sql");
+
+            var idsExistentes =
+                (
+                    await connection.QueryAsync<Guid>(
+                        sqlItensExistentes,
+                        new { OrcamentoId = orcamento.Id },
+                        transaction)
+                ).ToHashSet();
+
+            var sqlInativar =
+                _sqlFileReader.Get(
+                    "Orcamento/InativarItem.sql");
+
+            foreach (var id in idsExistentes)
             {
-                var item = orcamento.Itens
-                    .FirstOrDefault(x => x.Id == id);
+                if (!idsAtivos.Contains(id))
+                {
+                    var item = orcamento.Itens
+                        .FirstOrDefault(x => x.Id == id);
 
-                await connection.ExecuteAsync(
-                    sqlInativar,
-                    new
-                    {
-                        Id = id,
-                        DataAlteracao =
-                            item?.DataAlteracao
-                            ?? orcamento.DataAlteracao,
-                        AlteradoPorId =
-                            item?.AlteradoPorId
-                            ?? orcamento.AlteradoPorId
-                    },
-                    transaction);
+                    await connection.ExecuteAsync(
+                        sqlInativar,
+                        new
+                        {
+                            Id = id,
+                            DataAlteracao =
+                                item?.DataAlteracao
+                                ?? orcamento.DataAlteracao,
+                            AlteradoPorId =
+                                item?.AlteradoPorId
+                                ?? orcamento.AlteradoPorId
+                        },
+                        transaction);
+                }
             }
+
+            var sqlAdicionar =
+                _sqlFileReader.Get(
+                    "Orcamento/AdicionarItem.sql");
+
+            var sqlAtualizar =
+                _sqlFileReader.Get(
+                    "Orcamento/AtualizarItem.sql");
+
+            foreach (var item in itensAtivos)
+            {
+                if (idsExistentes.Contains(item.Id))
+                {
+                    await connection.ExecuteAsync(
+                        sqlAtualizar,
+                        new
+                        {
+                            item.Id,
+                            item.Quantidade,
+                            item.ValorUnitario,
+                            item.ValorTotal,
+                            item.DataAlteracao,
+                            item.AlteradoPorId,
+                            item.Ativo
+                        },
+                        transaction);
+                }
+                else
+                {
+                    await connection.ExecuteAsync(
+                        sqlAdicionar,
+                        new
+                        {
+                            item.Id,
+                            item.OrcamentoId,
+                            item.ServicoId,
+                            item.ItemEstoqueId,
+                            item.Quantidade,
+                            item.ValorUnitario,
+                            item.ValorTotal,
+                            item.CriadoPorId,
+                            item.DataCriacao,
+                            item.DataAlteracao,
+                            item.AlteradoPorId,
+                            item.Ativo
+                        },
+                        transaction);
+                }
+            }
+
+            transaction.Commit();
         }
-
-        var sqlAdicionar =
-            _sqlFileReader.Get(
-                "Orcamento/AdicionarItem.sql");
-
-        var sqlAtualizar =
-            _sqlFileReader.Get(
-                "Orcamento/AtualizarItem.sql");
-
-        foreach (var item in itensAtivos)
+        catch
         {
-            if (idsExistentes.Contains(item.Id))
-            {
-                await connection.ExecuteAsync(
-                    sqlAtualizar,
-                    new
-                    {
-                        item.Id,
-                        item.Quantidade,
-                        item.ValorUnitario,
-                        item.ValorTotal,
-                        item.DataAlteracao,
-                        item.AlteradoPorId,
-                        item.Ativo
-                    },
-                    transaction);
-            }
-            else
-            {
-                await connection.ExecuteAsync(
-                    sqlAdicionar,
-                    new
-                    {
-                        item.Id,
-                        item.OrcamentoId,
-                        item.ServicoId,
-                        item.ItemEstoqueId,
-                        item.Quantidade,
-                        item.ValorUnitario,
-                        item.ValorTotal,
-                        item.CriadoPorId,
-                        item.DataCriacao,
-                        item.DataAlteracao,
-                        item.AlteradoPorId,
-                        item.Ativo
-                    },
-                    transaction);
-            }
+            transaction.Rollback();
+            throw;
         }
-
-        transaction.Commit();
     }
-    catch
-    {
-        transaction.Rollback();
-        throw;
-    }
-}
 
     private static object MapearParametros(
         Orcamento orcamento)

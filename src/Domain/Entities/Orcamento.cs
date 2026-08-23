@@ -8,52 +8,6 @@ public class Orcamento : BaseEntity
 {
     private readonly List<OrcamentoItem> _itens = [];
 
-    public Orcamento(
-        Guid clienteId,
-        Guid veiculoId,
-        Guid criadoPorId)
-        : base(criadoPorId)
-    {
-        ClienteId = clienteId;
-        VeiculoId = veiculoId;
-        Status = StatusOrcamento.EmElaboracao;
-        Desconto = 0;
-        ValorTotal = 0;
-    }
-
-    public Orcamento(
-        Guid id,
-        Guid clienteId,
-        Guid veiculoId,
-        StatusOrcamento status,
-        decimal desconto,
-        decimal valorTotal,
-        DateTime? dataEnvioCliente,
-        DateTime? dataAprovacao,
-        DateTime? dataRejeicao,
-        Guid? criadoPorId,
-        DateTime dataCriacao,
-        DateTime? dataAlteracao,
-        Guid? alteradoPorId,
-        bool ativo)
-        : base(
-            id,
-            dataCriacao,
-            criadoPorId,
-            dataAlteracao,
-            alteradoPorId,
-            ativo)
-    {
-        ClienteId = clienteId;
-        VeiculoId = veiculoId;
-        Status = status;
-        Desconto = desconto;
-        ValorTotal = valorTotal;
-        DataEnvioCliente = dataEnvioCliente;
-        DataAprovacao = dataAprovacao;
-        DataRejeicao = dataRejeicao;
-    }
-
     public Guid ClienteId { get; private set; }
 
     public Guid VeiculoId { get; private set; }
@@ -147,7 +101,7 @@ public class Orcamento : BaseEntity
         var subtotal = _itens
             .Where(x => x.Ativo)
             .Sum(x => x.ValorTotal);
-            
+
         if (desconto > subtotal)
             throw new DomainException(
                 "O desconto não pode ser maior que o valor do orçamento.");
@@ -176,11 +130,16 @@ public class Orcamento : BaseEntity
     {
         ValidarStatus(StatusOrcamento.AguardandoCliente);
 
+        if (!_itens.Any(x => x.Ativo))
+            throw new DomainException(
+                "O orçamento deve possuir pelo menos um item.");
+
         Status = StatusOrcamento.Aprovado;
         DataAprovacao = DateTime.UtcNow;
 
         RegistrarAlteracao(usuarioId);
     }
+
 
     public void Rejeitar(Guid usuarioId)
     {
@@ -266,5 +225,51 @@ public class Orcamento : BaseEntity
             .Sum(x => x.ValorTotal);
 
         ValorTotal = subtotal - Desconto;
+    }
+
+    public Orcamento(
+        Guid clienteId,
+        Guid veiculoId,
+        Guid criadoPorId)
+        : base(criadoPorId)
+    {
+        ClienteId = clienteId;
+        VeiculoId = veiculoId;
+        Status = StatusOrcamento.EmElaboracao;
+        Desconto = 0;
+        ValorTotal = 0;
+    }
+
+    public Orcamento(
+        Guid id,
+        Guid clienteId,
+        Guid veiculoId,
+        StatusOrcamento status,
+        decimal desconto,
+        decimal valorTotal,
+        DateTime? dataEnvioCliente,
+        DateTime? dataAprovacao,
+        DateTime? dataRejeicao,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
+    {
+        ClienteId = clienteId;
+        VeiculoId = veiculoId;
+        Status = status;
+        Desconto = desconto;
+        ValorTotal = valorTotal;
+        DataEnvioCliente = dataEnvioCliente;
+        DataAprovacao = dataAprovacao;
+        DataRejeicao = dataRejeicao;
     }
 }

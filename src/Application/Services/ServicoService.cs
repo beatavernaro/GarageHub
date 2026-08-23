@@ -2,17 +2,14 @@ using Application.DTOs.Servico;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
-using Domain.Enums;
 using Domain.Entities;
 using Domain.Exceptions;
 
 namespace Application.Services;
 
-public class ServicoService(IServicoRepository servicoRepository, IItemEstoqueRepository itemEstoqueRepository, ICurrentUser currentUser) : IServicoService
+public class ServicoService(IServicoRepository servicoRepository, ICurrentUser currentUser) : IServicoService
 {
     private readonly IServicoRepository _servicoRepository = servicoRepository;
-
-    private readonly IItemEstoqueRepository _itemEstoqueRepository = itemEstoqueRepository;
 
     private readonly ICurrentUser _currentUser = currentUser;
 
@@ -55,7 +52,6 @@ public class ServicoService(IServicoRepository servicoRepository, IItemEstoqueRe
             nome,
             dto.Descricao,
             dto.Preco,
-            dto.Status,
             _currentUser.Id);
 
         servico.Normalizar();
@@ -99,75 +95,6 @@ public class ServicoService(IServicoRepository servicoRepository, IItemEstoqueRe
         await _servicoRepository.AtualizarAsync(servico);
     }
 
-    public async Task AlterarStatusAsync(Guid id, StatusServico status)
-    {
-        var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
-
-        servico.AlterarStatus(status, _currentUser.Id);
-
-        await _servicoRepository.AtualizarAsync(servico);
-    }
-
-    public async Task AdicionarItemEstoqueAsync(Guid id, AdicionarServicoItemEstoqueDto dto)
-    {
-        var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
-
-        var item = await _itemEstoqueRepository.ObterPorIdAsync(
-                dto.ItemEstoqueId)
-            ?? throw new DomainException("Item de estoque não encontrado.");
-
-        servico.AdicionarPecaInsumo(
-            item,
-            dto.Quantidade,
-            _currentUser.Id);
-
-        var itemServico = servico.ItensEstoque
-                .First(x =>
-                    x.ItemEstoqueId == dto.ItemEstoqueId &&
-                    x.Ativo);
-
-        await _servicoRepository.AdicionarItemEstoqueAsync(itemServico);
-    }
-
-    public async Task AlterarQuantidadeItemEstoqueAsync(Guid id, Guid itemEstoqueId, int quantidade)
-    {
-        var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
-
-        servico.AlterarQuantidadeItemEstoque(
-            itemEstoqueId,
-            quantidade,
-            _currentUser.Id);
-
-        var item = servico.ItensEstoque
-                .First(x =>
-                    x.ItemEstoqueId == itemEstoqueId &&
-                    x.Ativo);
-
-        await _servicoRepository.AtualizarItemEstoqueAsync(item);
-    }
-
-    public async Task RemoverItemEstoqueAsync(Guid id, Guid itemEstoqueId)
-    {
-        var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
-
-        servico.RemoverItemEstoque(
-            itemEstoqueId,
-            _currentUser.Id);
-
-        var item = servico.ItensEstoque
-                .FirstOrDefault(x =>
-                    x.ItemEstoqueId == itemEstoqueId) ?? throw new DomainException("Item de estoque não encontrado no serviço.");
-
-        await _servicoRepository.InativarItemEstoqueAsync(
-            item.Id,
-            item.DataAlteracao!.Value,
-            item.AlteradoPorId!.Value);
-    }
-
     public async Task InativarAsync(Guid id)
     {
         var servico = await _servicoRepository.ObterPorIdAsync(id)
@@ -189,25 +116,14 @@ public class ServicoService(IServicoRepository servicoRepository, IItemEstoqueRe
     }
 
     private static ServicoDto MapearParaDto(Servico servico)
+{
+    return new ServicoDto
     {
-        return new ServicoDto
-        {
-            Id = servico.Id,
-            Nome = servico.Nome,
-            Descricao = servico.Descricao,
-            Preco = servico.Preco,
-            Status = servico.Status,
-            Ativo = servico.Ativo,
-
-            ItensEstoque = [.. servico.ItensEstoque
-                .Where(x => x.Ativo)
-                .Select(x => new ServicoItemEstoqueDto
-                {
-                    Id = x.Id,
-                    ItemEstoqueId = x.ItemEstoqueId,
-                    Quantidade = x.Quantidade,
-                    Ativo = x.Ativo
-                })]
-        };
-    }
+        Id = servico.Id,
+        Nome = servico.Nome,
+        Descricao = servico.Descricao,
+        Preco = servico.Preco,
+        Ativo = servico.Ativo
+    };
+}
 }

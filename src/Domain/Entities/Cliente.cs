@@ -7,53 +7,6 @@ namespace Domain.Entities;
 
 public class Cliente : BaseEntity
 {
-    public Cliente(
-        string nome,
-        string documento,
-        TipoPessoa tipoPessoa,
-        string telefone,
-        string email,
-        Guid criadoPorId,
-        Endereco? endereco = null)
-        : base(criadoPorId)
-    {
-        Nome = nome;
-        Documento = documento;
-        TipoPessoa = tipoPessoa;
-        Telefone = telefone;
-        Email = email;
-        Endereco = endereco;
-    }
-
-    public Cliente(
-        Guid id,
-        string nome,
-        string documento,
-        TipoPessoa tipoPessoa,
-        string telefone,
-        string email,
-        Guid? criadoPorId,
-        DateTime dataCriacao,
-        DateTime? dataAlteracao,
-        Guid? alteradoPorId,
-        bool ativo,
-        Endereco? endereco = null)
-        : base(
-            id,
-            dataCriacao,
-            criadoPorId,
-            dataAlteracao,
-            alteradoPorId,
-            ativo)
-    {
-        Nome = nome;
-        Documento = documento;
-        TipoPessoa = tipoPessoa;
-        Telefone = telefone;
-        Email = email;
-        Endereco = endereco;
-    }
-
     public string Nome { get; private set; } = string.Empty;
     public string Documento { get; private set; } = string.Empty;
     public TipoPessoa TipoPessoa { get; private set; }
@@ -86,4 +39,56 @@ public class Cliente : BaseEntity
 
         Normalizar();
     }
+
+    public Cliente(
+        string nome,
+        string documento,
+        TipoPessoa tipoPessoa,
+        string telefone,
+        string email,
+        Guid criadoPorId,
+        Endereco? endereco = null)
+        : base(criadoPorId)
+    {
+        Nome = nome;
+        Documento = documento;
+        TipoPessoa = tipoPessoa;
+        Telefone = telefone;
+        Email = email;
+        Endereco = endereco;
+
+        Normalizar();
+    }
+
+    public Cliente(
+        Guid id,
+        string nome,
+        string documento,
+        TipoPessoa tipoPessoa,
+        string telefone,
+        string email,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo,
+        Endereco? endereco = null)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
+    {
+        Nome = nome;
+        Documento = documento;
+        TipoPessoa = tipoPessoa;
+        Telefone = telefone;
+        Email = email;
+        Endereco = endereco;
+
+        Normalizar();
+    }
+
 }

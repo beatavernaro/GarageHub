@@ -114,21 +114,16 @@ public class OrcamentoService(
     }
 
     public async Task AdicionarItemAsync(
-        Guid id,
-        AdicionarOrcamentoItemDto dto)
+    Guid id,
+    AdicionarOrcamentoItemDto dto)
     {
-        var orcamento =
-            await ObterOrcamentoAsync(id);
-
-        ValidarTipoItem(dto.ServicoId, dto.ItemEstoqueId);
+        var orcamento = await ObterOrcamentoAsync(id);
 
         if (dto.ServicoId.HasValue)
         {
             var servico =
-                await _servicoRepository.ObterPorIdAsync(
-                    dto.ServicoId.Value)
-                ?? throw new DomainException(
-                    "Serviço não encontrado.");
+                await _servicoRepository.ObterPorIdAsync(dto.ServicoId.Value)
+                ?? throw new DomainException("Serviço não encontrado.");
 
             if (!servico.Ativo)
             {
@@ -164,11 +159,8 @@ public class OrcamentoService(
             item,
             _currentUser.Id);
 
-        await _orcamentoRepository
-            .AtualizarItensAsync(orcamento);
-
-        await _orcamentoRepository
-            .AtualizarAsync(orcamento);
+        await _orcamentoRepository.AtualizarItensAsync(orcamento);
+        await _orcamentoRepository.AtualizarAsync(orcamento);
     }
 
     public async Task RemoverItemAsync(
@@ -272,19 +264,15 @@ public class OrcamentoService(
             .AtualizarAsync(orcamento);
     }
 
-    public async Task<ResultadoAprovacaoOrcamentoDto> AprovarAsync(
-        Guid id)
+    public async Task<ResultadoAprovacaoOrcamentoDto> AprovarAsync(Guid id)
     {
-        var orcamento =
-            await ObterOrcamentoAsync(id);
+        var orcamento = await ObterOrcamentoAsync(id);
+
+        orcamento.Aprovar(_currentUser.Id);
+        await _orcamentoRepository.AtualizarAsync(orcamento);
 
         var itensInsuficientes =
             await VerificarEstoqueInsuficienteAsync(orcamento);
-
-        orcamento.Aprovar(_currentUser.Id);
-
-        await _orcamentoRepository
-            .AtualizarAsync(orcamento);
 
         return new ResultadoAprovacaoOrcamentoDto
         {
@@ -357,109 +345,39 @@ public class OrcamentoService(
     }
 
     private async Task<List<ItemEstoqueInsuficienteDto>>
-        VerificarEstoqueInsuficienteAsync(
-            Orcamento orcamento)
+    VerificarEstoqueInsuficienteAsync(Orcamento orcamento)
     {
-        var quantidadesNecessarias =
-            new Dictionary<Guid, int>();
+        var resultado = new List<ItemEstoqueInsuficienteDto>();
 
-        foreach (var item in orcamento.Itens.Where(x => x.Ativo))
-        {
-            if (item.ItemEstoqueId.HasValue)
-            {
-                AdicionarQuantidadeNecessaria(
-                    quantidadesNecessarias,
-                    item.ItemEstoqueId.Value,
-                    item.Quantidade);
-
-                continue;
-            }
-
-            if (!item.ServicoId.HasValue)
-                continue;
-
-            var servico =
-                await _servicoRepository.ObterPorIdAsync(
-                    item.ServicoId.Value);
-
-            if (servico is null)
-                continue;
-
-            foreach (var itemServico in servico.ItensEstoque
-                         .Where(x => x.Ativo))
-            {
-                var quantidadeNecessaria =
-                    item.Quantidade *
-                    itemServico.Quantidade;
-
-                AdicionarQuantidadeNecessaria(
-                    quantidadesNecessarias,
-                    itemServico.ItemEstoqueId,
-                    quantidadeNecessaria);
-            }
-        }
-
-        var resultado =
-            new List<ItemEstoqueInsuficienteDto>();
-
-        foreach (var quantidade in quantidadesNecessarias)
+        foreach (var item in orcamento.Itens
+                     .Where(x => x.Ativo && x.ItemEstoqueId.HasValue))
         {
             var itemEstoque =
-                await _itemEstoqueRepository
-                    .ObterPorIdAsync(quantidade.Key);
+                await _itemEstoqueRepository.ObterPorIdAsync(
+                    item.ItemEstoqueId!.Value);
 
             if (itemEstoque is null)
                 continue;
 
-            if (itemEstoque.Estoque >= quantidade.Value)
+            if (itemEstoque.Estoque >= item.Quantidade)
                 continue;
 
-            resultado.Add(
-                new ItemEstoqueInsuficienteDto
-                {
-                    ItemEstoqueId = itemEstoque.Id,
-                    Nome = itemEstoque.Nome,
-                    QuantidadeDisponivel = itemEstoque.Estoque,
-                    QuantidadeNecessaria = quantidade.Value,
-                    QuantidadeFaltante =
-                        quantidade.Value - itemEstoque.Estoque
-                });
+            resultado.Add(new ItemEstoqueInsuficienteDto
+            {
+                ItemEstoqueId = itemEstoque.Id,
+                Nome = itemEstoque.Nome,
+                QuantidadeDisponivel = itemEstoque.Estoque,
+                QuantidadeNecessaria = item.Quantidade,
+                QuantidadeFaltante =
+                    item.Quantidade - itemEstoque.Estoque
+            });
         }
 
         return resultado;
     }
 
-    private static void AdicionarQuantidadeNecessaria(
-        Dictionary<Guid, int> quantidades,
-        Guid itemEstoqueId,
-        int quantidade)
-    {
-        if (quantidades.TryGetValue(
-            itemEstoqueId,
-            out var quantidadeAtual))
-        {
-            quantidades[itemEstoqueId] =
-                quantidadeAtual + quantidade;
-
-            return;
-        }
-
-        quantidades[itemEstoqueId] = quantidade;
-    }
-
-    private static void ValidarTipoItem(
-        Guid? servicoId,
-        Guid? itemEstoqueId)
-    {
-        if (servicoId.HasValue == itemEstoqueId.HasValue)
-        {
-            throw new DomainException(
-                "Informe um serviço ou um item de estoque, mas não ambos.");
-        }
-    }
-
     private static OrcamentoDto MapearParaDto(
-        Orcamento orcamento)
+    Orcamento orcamento)
     {
         return new OrcamentoDto
         {

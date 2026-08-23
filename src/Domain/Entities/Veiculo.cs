@@ -23,6 +23,8 @@ public class Veiculo : BaseEntity
         Cor = cor;
         Ano = ano;
         Quilometragem = quilometragem;
+
+        Normalizar();
     }
 
     public Veiculo(Guid id, Guid clienteId, string placa, string? chassi, string marca, string modelo, string cor, int ano, int quilometragem, Guid? criadoPorId, DateTime dataCriacao, DateTime? dataAlteracao, Guid? alteradoPorId, bool ativo)
@@ -36,6 +38,8 @@ public class Veiculo : BaseEntity
         Cor = cor;
         Ano = ano;
         Quilometragem = quilometragem;
+
+        Normalizar();
     }
 
     public void Normalizar()

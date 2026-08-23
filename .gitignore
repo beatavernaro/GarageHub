@@ -93,3 +93,4 @@ coverage.cobertura.xml
 
 # Generated files
 Generated/
+ApiDoc.json

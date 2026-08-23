@@ -1,6 +1,5 @@
 using Application.DTOs.Servico;
 using Application.Interfaces.Services;
-using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GarageHub.Api.Controllers;
@@ -92,57 +91,6 @@ public class ServicosController(
     public async Task<IActionResult> AlterarPreco([FromRoute] Guid id, [FromQuery] decimal novoPreco)
     {
         await _servicoService.AlterarPrecoAsync(id, novoPreco);
-
-        return NoContent();
-    }
-
-    [HttpPatch("{id:guid}/status")]
-    [EndpointSummary("Altera o status de um serviço")]
-    [EndpointDescription("Atualiza apenas o status do serviço informado.")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AlterarStatus([FromRoute] Guid id, [FromQuery] StatusServico status)
-    {
-        await _servicoService.AlterarStatusAsync(id, status);
-
-        return NoContent();
-    }
-
-    [HttpPost("{id:guid}/itens-estoque")]
-    [EndpointSummary("Adiciona um item de estoque a um serviço")]
-    [EndpointDescription("Vincula uma peça ou insumo ao serviço com a quantidade informada.")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AdicionarItemEstoque([FromRoute] Guid id, [FromBody] AdicionarServicoItemEstoqueDto dto)
-    {
-        await _servicoService.AdicionarItemEstoqueAsync(id, dto);
-
-        return NoContent();
-    }
-
-    [HttpPatch("{id:guid}/itens-estoque/{itemEstoqueId:guid}")]
-    [EndpointSummary("Altera a quantidade de um item de estoque no serviço")]
-    [EndpointDescription("Atualiza a quantidade de uma peça ou insumo vinculado ao serviço.")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AlterarQuantidadeItemEstoque([FromRoute] Guid id, [FromRoute] Guid itemEstoqueId, [FromQuery] int quantidade)
-    {
-        await _servicoService.AlterarQuantidadeItemEstoqueAsync(id, itemEstoqueId, quantidade);
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id:guid}/itens-estoque/{itemEstoqueId:guid}")]
-    [EndpointSummary("Remove um item de estoque de um serviço")]
-    [EndpointDescription("Remove o vínculo entre uma peça ou insumo e o serviço.")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RemoverItemEstoque([FromRoute] Guid id, [FromRoute] Guid itemEstoqueId)
-    {
-        await _servicoService.RemoverItemEstoqueAsync(id, itemEstoqueId);
 
         return NoContent();
     }

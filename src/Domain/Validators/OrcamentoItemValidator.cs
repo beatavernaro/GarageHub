@@ -1,7 +1,7 @@
 using Domain.Entities;
 using FluentValidation;
 
-namespace GarageHub.Domain.Validators;
+namespace Domain.Validators;
 
 public class OrcamentoItemValidator : AbstractValidator<OrcamentoItem>
 {

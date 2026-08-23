@@ -16,8 +16,5 @@ public class ServicoValidator : AbstractValidator<Servico>
             .GreaterThan(0)
             .WithMessage("O preço deve ser maior que zero.");
 
-        RuleFor(x => x.ItensEstoque)
-            .NotEmpty()
-            .WithMessage("O serviço deve possuir pelo menos um item de estoque.");
     }
 }

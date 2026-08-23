@@ -1,6 +1,5 @@
 using FluentValidation;
 using Domain.Entities;
-using GarageHub.Domain.Validators;
 
 namespace Domain.Validators;
 

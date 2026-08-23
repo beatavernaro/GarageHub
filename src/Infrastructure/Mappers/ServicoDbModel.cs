@@ -24,5 +24,4 @@ public class ServicoDbModel
 
     public bool Ativo { get; init; }
 
-    public List<ServicoItemEstoqueDbModel> ItensEstoque { get; set; } = [];
 }

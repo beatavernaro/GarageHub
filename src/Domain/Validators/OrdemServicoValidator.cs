@@ -28,7 +28,7 @@ public class OrdemServicoValidator : AbstractValidator<OrdemServico>
             .WithMessage("A ordem de serviço deve possuir pelo menos um serviço.");
 
         RuleForEach(x => x.Itens)
-            .SetValidator(new OrdemServicoItemValidator());
+            .SetValidator(new OrdemServicoItemEstoqueValidator());
 
         RuleFor(x => x.Desconto)
             .GreaterThanOrEqualTo(0)

@@ -9,32 +9,98 @@ public class OrdemServico : BaseEntity
     public Guid OrcamentoId { get; private set; }
     public Guid ClienteId { get; private set; }
     public Guid VeiculoId { get; private set; }
-
     public StatusOrdemServico Status { get; private set; }
-
     public decimal Desconto { get; private set; }
     public decimal ValorTotal { get; private set; }
-
     public DateTime? DataInicio { get; private set; }
     public DateTime? DataFinalizacao { get; private set; }
     public DateTime? DataEntrega { get; private set; }
 
-    private readonly List<OrdemServicoItem> _itens = [];
-    public IReadOnlyCollection<OrdemServicoItem> Itens => _itens;
+    private readonly List<OrdemServicoItemEstoque> _itens = [];
+    private readonly List<OrdemServicoServico> _servicos = [];
 
-    public OrdemServico(Guid orcamentoId, Guid clienteId, Guid veiculoId, decimal desconto, decimal valorTotal, IEnumerable<OrdemServicoItem> itens, Guid criadoPorId) : base(criadoPorId)
+    public IReadOnlyCollection<OrdemServicoItemEstoque> Itens => _itens;
+    public IReadOnlyCollection<OrdemServicoServico> Servicos => _servicos;
+
+    protected OrdemServico()
+    {
+    }
+
+    // Construtor utilizado na criação da entidade
+    public OrdemServico(
+    Guid id,
+    Guid orcamentoId,
+    Guid clienteId,
+    Guid veiculoId,
+    decimal desconto,
+    decimal valorTotal,
+    IEnumerable<OrdemServicoItemEstoque> itens,
+    IEnumerable<OrdemServicoServico> servicos,
+    Guid criadoPorId)
+    : base(
+        id,
+        DateTime.UtcNow,
+        criadoPorId,
+        null,
+        null,
+        true)
+{
+    OrcamentoId = orcamentoId;
+    ClienteId = clienteId;
+    VeiculoId = veiculoId;
+    Desconto = desconto;
+    ValorTotal = valorTotal;
+    Status = StatusOrdemServico.AguardandoExecucao;
+
+    _itens.AddRange(itens);
+    _servicos.AddRange(servicos);
+}
+
+    // Construtor utilizado pelo mapper ao carregar do banco
+    public OrdemServico(
+        Guid id,
+        Guid orcamentoId,
+        Guid clienteId,
+        Guid veiculoId,
+        StatusOrdemServico status,
+        decimal desconto,
+        decimal valorTotal,
+        DateTime? dataInicio,
+        DateTime? dataFinalizacao,
+        DateTime? dataEntrega,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo,
+        IEnumerable<OrdemServicoItemEstoque>? itens = null,
+        IEnumerable<OrdemServicoServico>? servicos = null)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
     {
         OrcamentoId = orcamentoId;
         ClienteId = clienteId;
         VeiculoId = veiculoId;
+        Status = status;
         Desconto = desconto;
         ValorTotal = valorTotal;
-        Status = StatusOrdemServico.AguardandoExecucao;
+        DataInicio = dataInicio;
+        DataFinalizacao = dataFinalizacao;
+        DataEntrega = dataEntrega;
 
-        _itens.AddRange(itens);
+        if (itens is not null)
+            _itens.AddRange(itens);
+
+        if (servicos is not null)
+            _servicos.AddRange(servicos);
     }
 
-    public void Iniciar()
+    public void Iniciar(Guid usuarioId)
     {
         if (Status != StatusOrdemServico.AguardandoExecucao)
             throw new DomainException(
@@ -42,19 +108,40 @@ public class OrdemServico : BaseEntity
 
         Status = StatusOrdemServico.EmExecucao;
         DataInicio = DateTime.UtcNow;
+
+        RegistrarAlteracao(usuarioId);
     }
 
-    public void Finalizar()
+    public void AtualizarStatus(Guid usuarioId)
     {
-        if (Status != StatusOrdemServico.EmExecucao)
-            throw new DomainException(
-                "A ordem de serviço não está em execução.");
+        if (Status is StatusOrdemServico.Finalizada
+            or StatusOrdemServico.Entregue)
+            return;
 
-        Status = StatusOrdemServico.Finalizada;
-        DataFinalizacao = DateTime.UtcNow;
+        if (_servicos.Any(x =>
+                x.Status == StatusServico.EmExecucao))
+        {
+            Status = StatusOrdemServico.EmExecucao;
+
+            if (!DataInicio.HasValue)
+                DataInicio = DateTime.UtcNow;
+        }
+        else if (_servicos.Any()
+                 && _servicos.All(x =>
+                     x.Status == StatusServico.Finalizada))
+        {
+            Status = StatusOrdemServico.Finalizada;
+            DataFinalizacao = DateTime.UtcNow;
+        }
+        else
+        {
+            Status = StatusOrdemServico.AguardandoExecucao;
+        }
+
+        RegistrarAlteracao(usuarioId);
     }
 
-    public void Entregar()
+    public void Entregar(Guid usuarioId)
     {
         if (Status != StatusOrdemServico.Finalizada)
             throw new DomainException(
@@ -62,5 +149,21 @@ public class OrdemServico : BaseEntity
 
         Status = StatusOrdemServico.Entregue;
         DataEntrega = DateTime.UtcNow;
+
+        RegistrarAlteracao(usuarioId);
+    }
+
+    public void CarregarItens(
+        IEnumerable<OrdemServicoItemEstoque> itens)
+    {
+        _itens.Clear();
+        _itens.AddRange(itens);
+    }
+
+    public void CarregarServicos(
+        IEnumerable<OrdemServicoServico> servicos)
+    {
+        _servicos.Clear();
+        _servicos.AddRange(servicos);
     }
 }

@@ -1,8 +1,12 @@
-INSERT INTO servicos_itens_estoque (
+INSERT INTO ordens_servico_itens_estoque (
     id,
-    servico_id,
+    ordem_servico_id,
     item_estoque_id,
+    nome_item,
+    descricao_item,
     quantidade,
+    valor_unitario,
+    valor_total,
     criado_por_id,
     data_criacao,
     data_alteracao,
@@ -11,9 +15,13 @@ INSERT INTO servicos_itens_estoque (
 )
 VALUES (
     @Id,
-    @ServicoId,
+    @OrdemServicoId,
     @ItemEstoqueId,
+    @NomeItem,
+    @DescricaoItem,
     @Quantidade,
+    @ValorUnitario,
+    @ValorTotal,
     @CriadoPorId,
     @DataCriacao,
     @DataAlteracao,
