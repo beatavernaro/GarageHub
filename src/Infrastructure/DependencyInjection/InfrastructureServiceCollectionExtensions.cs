@@ -37,6 +37,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
         services.AddScoped<IOrcamentoService, OrcamentoService>();
         
+        services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
+        services.AddScoped<IOrdemServicoService, OrdemServicoService>();
         return services;
     }
 }

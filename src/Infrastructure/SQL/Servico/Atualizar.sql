@@ -1,6 +1,7 @@
 UPDATE servicos
 SET
     nome = @Nome,
+    codigo_interno = @CodigoInterno,
     descricao = @Descricao,
     preco = @Preco,
     data_alteracao = @DataAlteracao,

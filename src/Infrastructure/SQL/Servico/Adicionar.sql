@@ -1,5 +1,6 @@
 INSERT INTO servicos (
     id,
+    codigo_interno,
     nome,
     descricao,
     preco,
@@ -11,6 +12,7 @@ INSERT INTO servicos (
 )
 VALUES (
     @Id,
+    @CodigoInterno,
     @Nome,
     @Descricao,
     @Preco,

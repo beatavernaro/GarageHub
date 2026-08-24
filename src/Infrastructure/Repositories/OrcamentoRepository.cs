@@ -203,24 +203,23 @@ public class OrcamentoRepository(
                 }
                 else
                 {
-                    await connection.ExecuteAsync(
-                        sqlAdicionar,
-                        new
-                        {
-                            item.Id,
-                            item.OrcamentoId,
-                            item.ServicoId,
-                            item.ItemEstoqueId,
-                            item.Quantidade,
-                            item.ValorUnitario,
-                            item.ValorTotal,
-                            item.CriadoPorId,
-                            item.DataCriacao,
-                            item.DataAlteracao,
-                            item.AlteradoPorId,
-                            item.Ativo
-                        },
-                        transaction);
+                    await connection.ExecuteAsync(sqlAdicionar, new
+                    {
+                        item.Id,
+                        item.OrcamentoId,
+                        item.ServicoId,
+                        item.ItemEstoqueId,
+                        item.NomeItem,
+                        item.DescricaoItem,
+                        item.Quantidade,
+                        item.ValorUnitario,
+                        item.ValorTotal,
+                        item.CriadoPorId,
+                        item.DataCriacao,
+                        item.DataAlteracao,
+                        item.AlteradoPorId,
+                        item.Ativo
+                    }, transaction);
                 }
             }
 

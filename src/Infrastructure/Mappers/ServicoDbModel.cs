@@ -5,14 +5,12 @@ namespace Infrastructure.Mappers;
 public class ServicoDbModel
 {
     public Guid Id { get; init; }
-
+    public string CodigoInterno { get; init; } = string.Empty;
     public string Nome { get; init; } = string.Empty;
 
     public string? Descricao { get; init; }
 
     public decimal Preco { get; init; }
-
-    public StatusServico Status { get; init; }
 
     public Guid? CriadoPorId { get; init; }
 

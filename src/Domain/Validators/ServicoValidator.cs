@@ -16,5 +16,11 @@ public class ServicoValidator : AbstractValidator<Servico>
             .GreaterThan(0)
             .WithMessage("O preço deve ser maior que zero.");
 
+        RuleFor(x => x.CodigoInterno)
+                    .NotEmpty()
+                    .WithMessage("O código interno é obrigatório.")
+                    .Matches(@"^[A-Z]{3}\d{4}$")
+                    .WithMessage("O código interno deve possuir 3 letras e 4 números.");
+
     }
 }

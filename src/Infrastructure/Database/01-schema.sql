@@ -7,6 +7,7 @@ CREATE TABLE usuarios (
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
+
     criado_por_id UUID NOT NULL,
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data_alteracao TIMESTAMPTZ,
@@ -35,7 +36,6 @@ CREATE TABLE clientes (
     telefone VARCHAR(11) NOT NULL,
     email VARCHAR(150) NOT NULL,
 
-    -- Endereço
     logradouro VARCHAR(200),
     numero VARCHAR(20),
     complemento VARCHAR(100),
@@ -151,6 +151,7 @@ CREATE TABLE itens_estoque (
 
 CREATE TABLE servicos (
     id UUID PRIMARY KEY,
+    codigo_interno VARCHAR(7) NOT NULL UNIQUE,
     nome VARCHAR(150) NOT NULL,
     descricao VARCHAR(500),
     preco NUMERIC(12,2) NOT NULL,
@@ -160,6 +161,9 @@ CREATE TABLE servicos (
     data_alteracao TIMESTAMPTZ,
     alterado_por_id UUID,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT ck_servicos_codigo
+    CHECK (codigo_interno ~ '^SER[0-9]{4}$'),
 
     CONSTRAINT fk_servicos_criado_por
         FOREIGN KEY (criado_por_id)
@@ -182,9 +186,11 @@ CREATE TABLE orcamentos (
     id UUID PRIMARY KEY,
     cliente_id UUID NOT NULL,
     veiculo_id UUID NOT NULL,
+
     status INTEGER NOT NULL DEFAULT 0,
     desconto NUMERIC(12,2) NOT NULL DEFAULT 0,
     valor_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+
     data_envio_cliente TIMESTAMPTZ,
     data_aprovacao TIMESTAMPTZ,
     data_rejeicao TIMESTAMPTZ,
@@ -224,13 +230,25 @@ CREATE TABLE orcamentos (
 
 -- ============================================
 -- ITENS DO ORÇAMENTO
+--
+-- Pode representar:
+-- 1. Serviço
+-- 2. Item de estoque
+--
+-- Também funciona como snapshot.
 -- ============================================
 
 CREATE TABLE orcamentos_itens (
     id UUID PRIMARY KEY,
     orcamento_id UUID NOT NULL,
+
     servico_id UUID,
     item_estoque_id UUID,
+
+    -- SNAPSHOT
+    nome_item VARCHAR(150) NOT NULL,
+    descricao_item VARCHAR(500),
+
     quantidade INTEGER NOT NULL,
     valor_unitario NUMERIC(12,2) NOT NULL,
     valor_total NUMERIC(12,2) NOT NULL,
@@ -263,9 +281,15 @@ CREATE TABLE orcamentos_itens (
 
     CONSTRAINT ck_orcamentos_itens_tipo
         CHECK (
-            (servico_id IS NOT NULL AND item_estoque_id IS NULL)
+            (
+                servico_id IS NOT NULL
+                AND item_estoque_id IS NULL
+            )
             OR
-            (servico_id IS NULL AND item_estoque_id IS NOT NULL)
+            (
+                servico_id IS NULL
+                AND item_estoque_id IS NOT NULL
+            )
         ),
 
     CONSTRAINT ck_orcamentos_itens_quantidade
@@ -285,12 +309,15 @@ CREATE TABLE orcamentos_itens (
 
 CREATE TABLE ordens_servico (
     id UUID PRIMARY KEY,
-    orcamento_id UUID NOT NULL,
+
+    orcamento_id UUID NOT NULL UNIQUE,
     cliente_id UUID NOT NULL,
     veiculo_id UUID NOT NULL,
+
     status INTEGER NOT NULL DEFAULT 0,
     desconto NUMERIC(12,2) NOT NULL DEFAULT 0,
     valor_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+
     data_inicio TIMESTAMPTZ,
     data_finalizacao TIMESTAMPTZ,
     data_entrega TIMESTAMPTZ,
@@ -333,17 +360,85 @@ CREATE TABLE ordens_servico (
 
 
 -- ============================================
--- ITENS DA ORDEM DE SERVIÇO
+-- SERVIÇOS DA ORDEM DE SERVIÇO
+--
+-- Snapshot dos serviços do orçamento.
+-- Cada serviço possui seu próprio status.
 -- ============================================
 
-CREATE TABLE ordens_servico_itens (
+CREATE TABLE ordens_servico_servicos (
     id UUID PRIMARY KEY,
+
     ordem_servico_id UUID NOT NULL,
     servico_id UUID NOT NULL,
 
     -- SNAPSHOT DO SERVIÇO
     nome_servico VARCHAR(150) NOT NULL,
     descricao_servico VARCHAR(500),
+
+    quantidade INTEGER NOT NULL,
+    valor_unitario NUMERIC(12,2) NOT NULL,
+    valor_total NUMERIC(12,2) NOT NULL,
+
+    -- 0 = AguardandoExecucao
+    -- 1 = EmExecucao
+    -- 2 = AguardandoPecas
+    -- 3 = Finalizada
+    status INTEGER NOT NULL DEFAULT 0,
+
+    criado_por_id UUID NOT NULL,
+    data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    data_alteracao TIMESTAMPTZ,
+    alterado_por_id UUID,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT fk_os_servicos_ordem
+        FOREIGN KEY (ordem_servico_id)
+        REFERENCES ordens_servico(id),
+
+    CONSTRAINT fk_os_servicos_servico
+        FOREIGN KEY (servico_id)
+        REFERENCES servicos(id),
+
+    CONSTRAINT fk_os_servicos_criado_por
+        FOREIGN KEY (criado_por_id)
+        REFERENCES usuarios(id),
+
+    CONSTRAINT fk_os_servicos_alterado_por
+        FOREIGN KEY (alterado_por_id)
+        REFERENCES usuarios(id),
+
+    CONSTRAINT ck_os_servicos_status
+        CHECK (status BETWEEN 0 AND 3),
+
+    CONSTRAINT ck_os_servicos_quantidade
+        CHECK (quantidade > 0),
+
+    CONSTRAINT ck_os_servicos_valor_unitario
+        CHECK (valor_unitario > 0),
+
+    CONSTRAINT ck_os_servicos_valor_total
+        CHECK (valor_total > 0)
+);
+
+
+-- ============================================
+-- ITENS DE ESTOQUE DA ORDEM DE SERVIÇO
+--
+-- Snapshot das peças/insumos do orçamento.
+-- Não possuem status de execução.
+-- ============================================
+
+CREATE TABLE ordens_servico_itens_estoque (
+    id UUID PRIMARY KEY,
+
+    ordem_servico_id UUID NOT NULL,
+    item_estoque_id UUID NOT NULL,
+
+    -- SNAPSHOT DO ITEM
+    nome_item VARCHAR(150) NOT NULL,
+    descricao_item VARCHAR(500),
+
     quantidade INTEGER NOT NULL,
     valor_unitario NUMERIC(12,2) NOT NULL,
     valor_total NUMERIC(12,2) NOT NULL,
@@ -354,28 +449,28 @@ CREATE TABLE ordens_servico_itens (
     alterado_por_id UUID,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT fk_ordens_servico_itens_ordem
+    CONSTRAINT fk_os_itens_estoque_ordem
         FOREIGN KEY (ordem_servico_id)
         REFERENCES ordens_servico(id),
 
-    CONSTRAINT fk_ordens_servico_itens_servico
-        FOREIGN KEY (servico_id)
-        REFERENCES servicos(id),
+    CONSTRAINT fk_os_itens_estoque_item
+        FOREIGN KEY (item_estoque_id)
+        REFERENCES itens_estoque(id),
 
-    CONSTRAINT fk_ordens_servico_itens_criado_por
+    CONSTRAINT fk_os_itens_estoque_criado_por
         FOREIGN KEY (criado_por_id)
         REFERENCES usuarios(id),
 
-    CONSTRAINT fk_ordens_servico_itens_alterado_por
+    CONSTRAINT fk_os_itens_estoque_alterado_por
         FOREIGN KEY (alterado_por_id)
         REFERENCES usuarios(id),
 
-    CONSTRAINT ck_ordens_servico_itens_quantidade
+    CONSTRAINT ck_os_itens_estoque_quantidade
         CHECK (quantidade > 0),
 
-    CONSTRAINT ck_ordens_servico_itens_valor_unitario
+    CONSTRAINT ck_os_itens_estoque_valor_unitario
         CHECK (valor_unitario > 0),
 
-    CONSTRAINT ck_ordens_servico_itens_valor_total
+    CONSTRAINT ck_os_itens_estoque_valor_total
         CHECK (valor_total > 0)
 );

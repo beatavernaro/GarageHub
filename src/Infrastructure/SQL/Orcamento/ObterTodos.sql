@@ -21,6 +21,8 @@ SELECT
     orcamento_id AS OrcamentoId,
     servico_id AS ServicoId,
     item_estoque_id AS ItemEstoqueId,
+    nome_item AS NomeItem,
+    descricao_item AS DescricaoItem,
     quantidade AS Quantidade,
     valor_unitario AS ValorUnitario,
     valor_total AS ValorTotal,

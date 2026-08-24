@@ -185,6 +185,18 @@ VALUES
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE
+),
+(
+    '30000000-0000-0000-0000-000000000003',
+    'PEC0002',
+    'Filtro de Óleo',
+    'Filtro de óleo do motor',
+    1,
+    35.00,
+    30,
+    '00000000-0000-0000-0000-000000000001',
+    NOW(),
+    TRUE
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -195,6 +207,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO servicos (
     id,
+    codigo_interno,
     nome,
     descricao,
     preco,
@@ -205,6 +218,7 @@ INSERT INTO servicos (
 VALUES
 (
     '40000000-0000-0000-0000-000000000001',
+    'SER0001',
     'Troca de Pastilhas de Freio',
     'Substituição das pastilhas de freio dianteiras',
     250.00,
@@ -214,9 +228,20 @@ VALUES
 ),
 (
     '40000000-0000-0000-0000-000000000002',
+    'SER0002',
     'Troca de Óleo',
-    'Troca do óleo e verificação do nível',
+    'Troca do óleo do motor',
     120.00,
+    '00000000-0000-0000-0000-000000000001',
+    NOW(),
+    TRUE
+),
+(
+    '40000000-0000-0000-0000-000000000003',
+    'SER0003',
+    'Alinhamento',
+    'Alinhamento da direção do veículo',
+    100.00,
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE
@@ -235,6 +260,7 @@ INSERT INTO orcamentos (
     status,
     desconto,
     valor_total,
+    data_envio_cliente,
     data_aprovacao,
     data_rejeicao,
     criado_por_id,
@@ -251,6 +277,7 @@ VALUES
     250.00,
     NULL,
     NULL,
+    NULL,
     '00000000-0000-0000-0000-000000000002',
     NOW(),
     TRUE
@@ -261,11 +288,12 @@ VALUES
     '20000000-0000-0000-0000-000000000002',
     2,
     20.00,
-    350.00,
+    315.00,
+    NOW() - INTERVAL '1 day',
     NOW(),
     NULL,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '2 days',
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;
@@ -280,6 +308,8 @@ INSERT INTO orcamentos_itens (
     orcamento_id,
     servico_id,
     item_estoque_id,
+    nome_item,
+    descricao_item,
     quantidade,
     valor_unitario,
     valor_total,
@@ -293,6 +323,8 @@ VALUES
     '60000000-0000-0000-0000-000000000001',
     '40000000-0000-0000-0000-000000000001',
     NULL,
+    'Troca de Pastilhas de Freio',
+    'Substituição das pastilhas de freio dianteiras',
     1,
     250.00,
     250.00,
@@ -305,9 +337,39 @@ VALUES
     '60000000-0000-0000-0000-000000000002',
     '40000000-0000-0000-0000-000000000002',
     NULL,
+    'Troca de Óleo',
+    'Troca do óleo do motor',
     1,
     120.00,
     120.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW(),
+    TRUE
+),
+(
+    '70000000-0000-0000-0000-000000000003',
+    '60000000-0000-0000-0000-000000000002',
+    NULL,
+    '30000000-0000-0000-0000-000000000002',
+    'Óleo 5W30',
+    'Óleo sintético para motor',
+    4,
+    45.00,
+    180.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW(),
+    TRUE
+),
+(
+    '70000000-0000-0000-0000-000000000004',
+    '60000000-0000-0000-0000-000000000002',
+    NULL,
+    '30000000-0000-0000-0000-000000000003',
+    'Filtro de Óleo',
+    'Filtro de óleo do motor',
+    1,
+    35.00,
+    35.00,
     '00000000-0000-0000-0000-000000000002',
     NOW(),
     TRUE
@@ -316,7 +378,7 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
--- ORDENS DE SERVIÇO
+-- ORDEM DE SERVIÇO
 -- ============================================
 
 INSERT INTO ordens_servico (
@@ -340,10 +402,10 @@ VALUES
     '60000000-0000-0000-0000-000000000002',
     '10000000-0000-0000-0000-000000000002',
     '20000000-0000-0000-0000-000000000002',
-    1,
+    0,
     20.00,
-    350.00,
-    NOW(),
+    315.00,
+    NULL,
     NULL,
     NULL,
     '00000000-0000-0000-0000-000000000002',
@@ -354,11 +416,10 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
--- ITENS DAS ORDENS DE SERVIÇO
--- SNAPSHOT DO SERVIÇO
+-- SERVIÇOS DA ORDEM DE SERVIÇO
 -- ============================================
 
-INSERT INTO ordens_servico_itens (
+INSERT INTO ordens_servico_servicos (
     id,
     ordem_servico_id,
     servico_id,
@@ -367,6 +428,7 @@ INSERT INTO ordens_servico_itens (
     quantidade,
     valor_unitario,
     valor_total,
+    status,
     criado_por_id,
     data_criacao,
     ativo
@@ -377,10 +439,58 @@ VALUES
     '80000000-0000-0000-0000-000000000001',
     '40000000-0000-0000-0000-000000000002',
     'Troca de Óleo',
-    'Troca do óleo e verificação do nível',
+    'Troca do óleo do motor',
     1,
     120.00,
     120.00,
+    0,
+    '00000000-0000-0000-0000-000000000002',
+    NOW(),
+    TRUE
+)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- ============================================
+-- ITENS DE ESTOQUE DA ORDEM DE SERVIÇO
+-- ============================================
+
+INSERT INTO ordens_servico_itens_estoque (
+    id,
+    ordem_servico_id,
+    item_estoque_id,
+    nome_item,
+    descricao_item,
+    quantidade,
+    valor_unitario,
+    valor_total,
+    criado_por_id,
+    data_criacao,
+    ativo
+)
+VALUES
+(
+    '91000000-0000-0000-0000-000000000001',
+    '80000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000002',
+    'Óleo 5W30',
+    'Óleo sintético para motor',
+    4,
+    45.00,
+    180.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW(),
+    TRUE
+),
+(
+    '91000000-0000-0000-0000-000000000002',
+    '80000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000003',
+    'Filtro de Óleo',
+    'Filtro de óleo do motor',
+    1,
+    35.00,
+    35.00,
     '00000000-0000-0000-0000-000000000002',
     NOW(),
     TRUE

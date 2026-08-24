@@ -14,6 +14,7 @@ public class OrcamentoService(
     IVeiculoRepository veiculoRepository,
     IServicoRepository servicoRepository,
     IItemEstoqueRepository itemEstoqueRepository,
+    IOrdemServicoService ordemServicoService,
     ICurrentUser currentUser) : IOrcamentoService
 {
     private readonly IOrcamentoRepository _orcamentoRepository =
@@ -30,7 +31,8 @@ public class OrcamentoService(
 
     private readonly IItemEstoqueRepository _itemEstoqueRepository =
         itemEstoqueRepository;
-
+    private readonly IOrdemServicoService _ordemServicoService =
+        ordemServicoService;
     private readonly ICurrentUser _currentUser =
         currentUser;
 
@@ -119,20 +121,27 @@ public class OrcamentoService(
     {
         var orcamento = await ObterOrcamentoAsync(id);
 
+        string nomeItem;
+        string? descricaoItem;
+
         if (dto.ServicoId.HasValue)
         {
             var servico =
-                await _servicoRepository.ObterPorIdAsync(dto.ServicoId.Value)
-                ?? throw new DomainException("Serviço não encontrado.");
+                await _servicoRepository.ObterPorIdAsync(
+                    dto.ServicoId.Value)
+                ?? throw new DomainException(
+                    "Serviço não encontrado.");
 
             if (!servico.Ativo)
             {
                 throw new DomainException(
                     "Não é possível adicionar um serviço inativo ao orçamento.");
             }
-        }
 
-        if (dto.ItemEstoqueId.HasValue)
+            nomeItem = servico.Nome;
+            descricaoItem = servico.Descricao;
+        }
+        else if (dto.ItemEstoqueId.HasValue)
         {
             var itemEstoque =
                 await _itemEstoqueRepository.ObterPorIdAsync(
@@ -145,12 +154,22 @@ public class OrcamentoService(
                 throw new DomainException(
                     "Não é possível adicionar um item de estoque inativo ao orçamento.");
             }
+
+            nomeItem = itemEstoque.Nome;
+            descricaoItem = itemEstoque.Descricao;
+        }
+        else
+        {
+            throw new DomainException(
+                "Informe um serviço ou um item de estoque.");
         }
 
         var item = new OrcamentoItem(
             orcamento.Id,
             dto.ServicoId,
             dto.ItemEstoqueId,
+            nomeItem,
+            descricaoItem,
             dto.Quantidade,
             dto.ValorUnitario,
             _currentUser.Id);
@@ -159,8 +178,11 @@ public class OrcamentoService(
             item,
             _currentUser.Id);
 
-        await _orcamentoRepository.AtualizarItensAsync(orcamento);
-        await _orcamentoRepository.AtualizarAsync(orcamento);
+        await _orcamentoRepository
+            .AtualizarItensAsync(orcamento);
+
+        await _orcamentoRepository
+            .AtualizarAsync(orcamento);
     }
 
     public async Task RemoverItemAsync(
@@ -264,25 +286,38 @@ public class OrcamentoService(
             .AtualizarAsync(orcamento);
     }
 
-    public async Task<ResultadoAprovacaoOrcamentoDto> AprovarAsync(Guid id)
+    public async Task<ResultadoAprovacaoOrcamentoDto> AprovarAsync(
+    Guid id)
+{
+    var orcamento =
+        await ObterOrcamentoAsync(id);
+
+    // 1. Cliente aprova o orçamento
+    orcamento.Aprovar(_currentUser.Id);
+
+    await _orcamentoRepository
+        .AtualizarAsync(orcamento);
+
+    // 2. Gera automaticamente a Ordem de Serviço
+    await _ordemServicoService
+        .CriarAsync(orcamento.Id);
+
+    // 3. Somente depois verifica o estoque
+    var itensInsuficientes =
+        await VerificarEstoqueInsuficienteAsync(
+            orcamento);
+
+    return new ResultadoAprovacaoOrcamentoDto
     {
-        var orcamento = await ObterOrcamentoAsync(id);
+        OrcamentoId = orcamento.Id,
 
-        orcamento.Aprovar(_currentUser.Id);
-        await _orcamentoRepository.AtualizarAsync(orcamento);
+        Mensagem = itensInsuficientes.Count == 0
+            ? "Orçamento aprovado."
+            : "Orçamento aprovado, mas existem itens com estoque insuficiente.",
 
-        var itensInsuficientes =
-            await VerificarEstoqueInsuficienteAsync(orcamento);
-
-        return new ResultadoAprovacaoOrcamentoDto
-        {
-            OrcamentoId = orcamento.Id,
-            Mensagem = itensInsuficientes.Count == 0
-                ? "Orçamento aprovado. O estoque possui quantidade suficiente."
-                : "Orçamento aprovado, mas existem itens com estoque insuficiente.",
-            ItensInsuficientes = itensInsuficientes
-        };
-    }
+        ItensInsuficientes = itensInsuficientes
+    };
+}
 
     public async Task RejeitarAsync(Guid id)
     {

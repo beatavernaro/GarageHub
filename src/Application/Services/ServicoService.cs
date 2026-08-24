@@ -29,9 +29,9 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
         return servicos.Select(MapearParaDto);
     }
 
-    public async Task<ServicoDto?> ObterPorNomeAsync(string nome)
+    public async Task<ServicoDto?> ObterPorCodigoInternoAsync(string codigoInterno)
     {
-        var servico = await _servicoRepository.ObterPorNomeAsync(nome);
+        var servico = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         return servico is null
             ? null
@@ -41,15 +41,16 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     public async Task<ServicoDto> CriarAsync(
         CriarServicoDto dto)
     {
-        var nome = dto.Nome.Trim();
+        var codigoInterno = dto.CodigoInterno.Trim();
 
-        var servicoExistente = await _servicoRepository.ObterPorNomeAsync(nome);
+        var servicoExistente = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         if (servicoExistente is not null)
-            throw new DomainException("Já existe um serviço cadastrado com este nome.");
+            throw new DomainException("Já existe um serviço cadastrado com este código interno.");
 
         var servico = new Servico(
-            nome,
+            codigoInterno,
+            dto.Nome,
             dto.Descricao,
             dto.Preco,
             _currentUser.Id);
@@ -67,18 +68,19 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
             await _servicoRepository.ObterPorIdAsync(id)
             ?? throw new DomainException("Serviço não encontrado.");
 
-        var nome = dto.Nome.Trim();
+        var codigoInterno = dto.CodigoInterno.Trim();
 
-        var outroServico = await _servicoRepository.ObterPorNomeAsync(nome);
+        var outroServico = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         if (outroServico is not null &&
             outroServico.Id != id)
         {
-            throw new DomainException("Já existe outro serviço cadastrado com este nome.");
+            throw new DomainException("Já existe outro serviço cadastrado com este código interno.");
         }
 
         servico.Atualizar(
-            nome,
+            codigoInterno,
+            dto.Nome,
             dto.Descricao,
             _currentUser.Id);
 
@@ -120,6 +122,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     return new ServicoDto
     {
         Id = servico.Id,
+        CodigoInterno = servico.CodigoInterno,
         Nome = servico.Nome,
         Descricao = servico.Descricao,
         Preco = servico.Preco,

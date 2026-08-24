@@ -22,10 +22,6 @@ public class OrdemServico : BaseEntity
     public IReadOnlyCollection<OrdemServicoItemEstoque> Itens => _itens;
     public IReadOnlyCollection<OrdemServicoServico> Servicos => _servicos;
 
-    protected OrdemServico()
-    {
-    }
-
     // Construtor utilizado na criação da entidade
     public OrdemServico(
     Guid id,

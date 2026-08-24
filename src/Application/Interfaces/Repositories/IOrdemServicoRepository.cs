@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.Interfaces.Repositories;
 
@@ -12,11 +13,10 @@ public interface IOrdemServicoRepository
 
     Task AtualizarAsync(OrdemServico ordemServico);
 
-    Task AdicionarItensAsync(OrdemServico ordemServico);
-
     Task AtualizarServicoStatusAsync(
         Guid ordemServicoId,
-        Guid servicoId,
-        Domain.Enums.StatusServico status,
+        Guid ordemServicoServicoId,
+        StatusServico status,
+        DateTime dataAlteracao,
         Guid usuarioId);
 }

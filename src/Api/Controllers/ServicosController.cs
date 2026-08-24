@@ -38,15 +38,15 @@ public class ServicosController(
         return Ok(servico);
     }
 
-    [HttpGet("nome/{nome}")]
-    [EndpointSummary("Obtém um serviço pelo nome")]
+    [HttpGet($"codigoInterno/{{codigoInterno}}")]
+    [EndpointSummary("Obtém um serviço pelo código interno")]
     [EndpointDescription(
-        "Retorna os dados de um serviço cadastrado com o nome informado.")]
+        "Retorna os dados de um serviço cadastrado com o código interno informado.")]
     [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ServicoDto>> ObterPorNome([FromRoute] string nome)
+    public async Task<ActionResult<ServicoDto>> ObterPorCodigoInterno([FromRoute] string codigoInterno)
     {
-        var servico = await _servicoService.ObterPorNomeAsync(nome);
+        var servico = await _servicoService.ObterPorCodigoInternoAsync(codigoInterno);
 
         if (servico is null)
             return NotFound();

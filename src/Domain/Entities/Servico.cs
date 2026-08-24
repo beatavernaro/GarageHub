@@ -6,6 +6,7 @@ namespace Domain.Entities;
 
 public class Servico : BaseEntity
 {
+    public string CodigoInterno { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
 
     public string? Descricao { get; private set; }
@@ -21,10 +22,12 @@ public class Servico : BaseEntity
     }
 
     public void Atualizar(
+        string codigoInterno,
         string nome,
         string? descricao,
         Guid usuarioId)
     {
+        CodigoInterno = codigoInterno;
         Nome = nome;
         Descricao = descricao;
 
@@ -45,12 +48,14 @@ public class Servico : BaseEntity
     }
 
     public Servico(
+        string codigoInterno,
         string nome,
         string? descricao,
         decimal preco,
         Guid criadoPorId)
         : base(criadoPorId)
     {
+        CodigoInterno = codigoInterno;
         Nome = nome;
         Descricao = descricao;
         Preco = preco;
@@ -58,6 +63,7 @@ public class Servico : BaseEntity
 
     public Servico(
         Guid id,
+        string codigoInterno,
         string nome,
         string? descricao,
         decimal preco,
@@ -74,6 +80,7 @@ public class Servico : BaseEntity
             alteradoPorId,
             ativo)
     {
+        CodigoInterno = codigoInterno;
         Nome = nome;
         Descricao = descricao;
         Preco = preco;

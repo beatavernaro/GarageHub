@@ -20,23 +20,6 @@ ORDER BY data_criacao DESC;
 SELECT
     id AS Id,
     ordem_servico_id AS OrdemServicoId,
-    item_estoque_id AS ItemEstoqueId,
-    nome_item AS NomeItem,
-    descricao_item AS DescricaoItem,
-    quantidade AS Quantidade,
-    valor_unitario AS ValorUnitario,
-    valor_total AS ValorTotal,
-    criado_por_id AS CriadoPorId,
-    data_criacao AS DataCriacao,
-    data_alteracao AS DataAlteracao,
-    alterado_por_id AS AlteradoPorId,
-    ativo AS Ativo
-FROM ordens_servico_itens_estoque
-WHERE ativo = TRUE;
-
-SELECT
-    id AS Id,
-    ordem_servico_id AS OrdemServicoId,
     servico_id AS ServicoId,
     nome_servico AS NomeServico,
     descricao_servico AS DescricaoServico,
@@ -50,4 +33,21 @@ SELECT
     alterado_por_id AS AlteradoPorId,
     ativo AS Ativo
 FROM ordens_servico_servicos
-WHERE ativo = TRUE;
+ORDER BY data_criacao;
+
+SELECT
+    id AS Id,
+    ordem_servico_id AS OrdemServicoId,
+    item_estoque_id AS ItemEstoqueId,
+    nome_item AS NomeItem,
+    descricao_item AS DescricaoItem,
+    quantidade AS Quantidade,
+    valor_unitario AS ValorUnitario,
+    valor_total AS ValorTotal,
+    criado_por_id AS CriadoPorId,
+    data_criacao AS DataCriacao,
+    data_alteracao AS DataAlteracao,
+    alterado_por_id AS AlteradoPorId,
+    ativo AS Ativo
+FROM ordens_servico_itens_estoque
+ORDER BY data_criacao;

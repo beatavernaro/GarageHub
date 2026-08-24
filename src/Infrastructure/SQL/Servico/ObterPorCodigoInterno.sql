@@ -1,5 +1,6 @@
 SELECT
     id,
+    codigo_interno,
     nome,
     descricao,
     preco,
@@ -9,5 +10,5 @@ SELECT
     alterado_por_id,
     ativo
 FROM servicos
-WHERE nome = @Nome
+WHERE codigo_interno = @CodigoInterno
   AND ativo = TRUE;

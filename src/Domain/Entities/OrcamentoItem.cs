@@ -65,13 +65,15 @@ public class OrcamentoItem : BaseEntity
     }
 
     public OrcamentoItem(
-        Guid orcamentoId,
-        Guid? servicoId,
-        Guid? itemEstoqueId,
-        int quantidade,
-        decimal valorUnitario,
-        Guid criadoPorId)
-        : base(criadoPorId)
+    Guid orcamentoId,
+    Guid? servicoId,
+    Guid? itemEstoqueId,
+    string nomeItem,
+    string? descricaoItem,
+    int quantidade,
+    decimal valorUnitario,
+    Guid criadoPorId)
+    : base(criadoPorId)
     {
         ValidarTipoItem(servicoId, itemEstoqueId);
 
@@ -86,6 +88,8 @@ public class OrcamentoItem : BaseEntity
         OrcamentoId = orcamentoId;
         ServicoId = servicoId;
         ItemEstoqueId = itemEstoqueId;
+        NomeItem = nomeItem;
+        DescricaoItem = descricaoItem;
         Quantidade = quantidade;
         ValorUnitario = valorUnitario;
 
@@ -93,31 +97,35 @@ public class OrcamentoItem : BaseEntity
     }
 
     public OrcamentoItem(
-        Guid id,
-        Guid orcamentoId,
-        Guid? servicoId,
-        Guid? itemEstoqueId,
-        int quantidade,
-        decimal valorUnitario,
-        decimal valorTotal,
-        Guid? criadoPorId,
-        DateTime dataCriacao,
-        DateTime? dataAlteracao,
-        Guid? alteradoPorId,
-        bool ativo)
-        : base(
-            id,
-            dataCriacao,
-            criadoPorId,
-            dataAlteracao,
-            alteradoPorId,
-            ativo)
+    Guid id,
+    Guid orcamentoId,
+    Guid? servicoId,
+    Guid? itemEstoqueId,
+    string nomeItem,
+    string? descricaoItem,
+    int quantidade,
+    decimal valorUnitario,
+    decimal valorTotal,
+    Guid? criadoPorId,
+    DateTime dataCriacao,
+    DateTime? dataAlteracao,
+    Guid? alteradoPorId,
+    bool ativo)
+    : base(
+        id,
+        dataCriacao,
+        criadoPorId,
+        dataAlteracao,
+        alteradoPorId,
+        ativo)
     {
         ValidarTipoItem(servicoId, itemEstoqueId);
 
         OrcamentoId = orcamentoId;
         ServicoId = servicoId;
         ItemEstoqueId = itemEstoqueId;
+        NomeItem = nomeItem;
+        DescricaoItem = descricaoItem;
         Quantidade = quantidade;
         ValorUnitario = valorUnitario;
         ValorTotal = valorTotal;

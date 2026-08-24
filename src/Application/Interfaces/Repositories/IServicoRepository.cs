@@ -8,7 +8,7 @@ public interface IServicoRepository
 
     Task<IEnumerable<Servico>> ObterTodosAsync();
 
-    Task<Servico?> ObterPorNomeAsync(string nome);
+    Task<Servico?> ObterPorCodigoInternoAsync(string codigoInterno);
 
     Task AdicionarAsync(Servico servico);
 

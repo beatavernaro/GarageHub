@@ -9,15 +9,12 @@ public interface IOrdemServicoService
 
     Task<IEnumerable<OrdemServicoDto>> ObterTodosAsync();
 
-    Task<OrdemServicoDto> CriarAsync(
-        Guid orcamentoId);
-
-    Task IniciarAsync(Guid id);
-
-    Task EntregarAsync(Guid id);
+    Task<OrdemServicoDto> CriarAsync(Guid orcamentoId);
 
     Task AlterarStatusServicoAsync(
-        Guid id,
-        Guid servicoId,
+        Guid ordemServicoId,
+        Guid ordemServicoServicoId,
         StatusServico status);
+
+    Task EntregarAsync(Guid id);
 }

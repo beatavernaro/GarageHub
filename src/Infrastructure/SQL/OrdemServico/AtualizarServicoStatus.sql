@@ -1,8 +1,8 @@
 UPDATE ordens_servico_servicos
 SET
     status = @Status,
-    data_alteracao = NOW(),
+    data_alteracao = @DataAlteracao,
     alterado_por_id = @AlteradoPorId
-WHERE ordem_servico_id = @OrdemServicoId
-  AND servico_id = @ServicoId
+WHERE id = @Id
+  AND ordem_servico_id = @OrdemServicoId
   AND ativo = TRUE;

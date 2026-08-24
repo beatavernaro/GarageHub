@@ -5,13 +5,13 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Mappers;
-using Infrastructure.Models;
 
 namespace Infrastructure.Repositories;
 
 public class OrdemServicoRepository(
     IDbConnectionFactory connectionFactory,
-    SqlFileReader sqlFileReader) : IOrdemServicoRepository
+    SqlFileReader sqlFileReader)
+    : IOrdemServicoRepository
 {
     private readonly IDbConnectionFactory _connectionFactory =
         connectionFactory;
@@ -25,7 +25,8 @@ public class OrdemServicoRepository(
             _connectionFactory.CreateConnection();
 
         var sql =
-            _sqlFileReader.Get("OrdemServico/ObterPorId.sql");
+            _sqlFileReader.Get(
+                "OrdemServico/ObterPorId.sql");
 
         using var multi =
             await connection.QueryMultipleAsync(
@@ -38,14 +39,14 @@ public class OrdemServicoRepository(
         if (model is null)
             return null;
 
-        model.Itens =
-        [
-            .. await multi.ReadAsync<OrdemServicoItemEstoqueDbModel>()
-        ];
-
         model.Servicos =
         [
             .. await multi.ReadAsync<OrdemServicoServicoDbModel>()
+        ];
+
+        model.Itens =
+        [
+            .. await multi.ReadAsync<OrdemServicoItemEstoqueDbModel>()
         ];
 
         return model.ToEntity();
@@ -57,7 +58,8 @@ public class OrdemServicoRepository(
             _connectionFactory.CreateConnection();
 
         var sql =
-            _sqlFileReader.Get("OrdemServico/ObterTodos.sql");
+            _sqlFileReader.Get(
+                "OrdemServico/ObterTodos.sql");
 
         using var multi =
             await connection.QueryMultipleAsync(sql);
@@ -66,25 +68,25 @@ public class OrdemServicoRepository(
             (await multi.ReadAsync<OrdemServicoDbModel>())
             .ToList();
 
-        var itens =
-            (await multi.ReadAsync<OrdemServicoItemEstoqueDbModel>())
-            .ToList();
-
         var servicos =
             (await multi.ReadAsync<OrdemServicoServicoDbModel>())
             .ToList();
 
+        var itens =
+            (await multi.ReadAsync<OrdemServicoItemEstoqueDbModel>())
+            .ToList();
+
         foreach (var ordem in ordens)
         {
-            ordem.Itens =
-            [
-                .. itens.Where(x =>
-                    x.OrdemServicoId == ordem.Id)
-            ];
-
             ordem.Servicos =
             [
                 .. servicos.Where(x =>
+                    x.OrdemServicoId == ordem.Id)
+            ];
+
+            ordem.Itens =
+            [
+                .. itens.Where(x =>
                     x.OrdemServicoId == ordem.Id)
             ];
         }
@@ -98,36 +100,6 @@ public class OrdemServicoRepository(
         using var connection =
             _connectionFactory.CreateConnection();
 
-        var sql =
-            _sqlFileReader.Get("OrdemServico/Adicionar.sql");
-
-        await connection.ExecuteAsync(
-            sql,
-            MapearParametros(ordemServico));
-
-        await AdicionarItensAsync(ordemServico);
-    }
-
-    public async Task AtualizarAsync(
-        OrdemServico ordemServico)
-    {
-        using var connection =
-            _connectionFactory.CreateConnection();
-
-        var sql =
-            _sqlFileReader.Get("OrdemServico/Atualizar.sql");
-
-        await connection.ExecuteAsync(
-            sql,
-            MapearParametros(ordemServico));
-    }
-
-    public async Task AdicionarItensAsync(
-        OrdemServico ordemServico)
-    {
-        using var connection =
-            _connectionFactory.CreateConnection();
-
         connection.Open();
 
         using var transaction =
@@ -135,38 +107,20 @@ public class OrdemServicoRepository(
 
         try
         {
-            var sqlItem =
+            var sqlOrdem =
                 _sqlFileReader.Get(
-                    "OrdemServico/AdicionarItemEstoque.sql");
+                    "OrdemServico/Adicionar.sql");
 
-            foreach (var item in ordemServico.Itens.Where(x => x.Ativo))
-            {
-                await connection.ExecuteAsync(
-                    sqlItem,
-                    new
-                    {
-                        item.Id,
-                        item.OrdemServicoId,
-                        item.ItemEstoqueId,
-                        item.NomeItem,
-                        item.DescricaoItem,
-                        item.Quantidade,
-                        item.ValorUnitario,
-                        item.ValorTotal,
-                        item.CriadoPorId,
-                        item.DataCriacao,
-                        item.DataAlteracao,
-                        item.AlteradoPorId,
-                        item.Ativo
-                    },
-                    transaction);
-            }
+            await connection.ExecuteAsync(
+                sqlOrdem,
+                MapearParametros(ordemServico),
+                transaction);
 
             var sqlServico =
                 _sqlFileReader.Get(
                     "OrdemServico/AdicionarServico.sql");
 
-            foreach (var servico in ordemServico.Servicos.Where(x => x.Ativo))
+            foreach (var servico in ordemServico.Servicos)
             {
                 await connection.ExecuteAsync(
                     sqlServico,
@@ -190,6 +144,33 @@ public class OrdemServicoRepository(
                     transaction);
             }
 
+            var sqlItem =
+                _sqlFileReader.Get(
+                    "OrdemServico/AdicionarItemEstoque.sql");
+
+            foreach (var item in ordemServico.Itens)
+            {
+                await connection.ExecuteAsync(
+                    sqlItem,
+                    new
+                    {
+                        item.Id,
+                        item.OrdemServicoId,
+                        item.ItemEstoqueId,
+                        item.NomeItem,
+                        item.DescricaoItem,
+                        item.Quantidade,
+                        item.ValorUnitario,
+                        item.ValorTotal,
+                        item.CriadoPorId,
+                        item.DataCriacao,
+                        item.DataAlteracao,
+                        item.AlteradoPorId,
+                        item.Ativo
+                    },
+                    transaction);
+            }
+
             transaction.Commit();
         }
         catch
@@ -199,10 +180,26 @@ public class OrdemServicoRepository(
         }
     }
 
+    public async Task AtualizarAsync(
+        OrdemServico ordemServico)
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        var sql =
+            _sqlFileReader.Get(
+                "OrdemServico/Atualizar.sql");
+
+        await connection.ExecuteAsync(
+            sql,
+            MapearParametros(ordemServico));
+    }
+
     public async Task AtualizarServicoStatusAsync(
         Guid ordemServicoId,
-        Guid servicoId,
+        Guid ordemServicoServicoId,
         StatusServico status,
+        DateTime dataAlteracao,
         Guid usuarioId)
     {
         using var connection =
@@ -217,8 +214,9 @@ public class OrdemServicoRepository(
             new
             {
                 OrdemServicoId = ordemServicoId,
-                ServicoId = servicoId,
+                Id = ordemServicoServicoId,
                 Status = (int)status,
+                DataAlteracao = dataAlteracao,
                 AlteradoPorId = usuarioId
             });
     }

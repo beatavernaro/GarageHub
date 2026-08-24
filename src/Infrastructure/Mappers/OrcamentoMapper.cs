@@ -4,7 +4,8 @@ namespace Infrastructure.Mappers;
 
 public static class OrcamentoMapper
 {
-    public static Orcamento ToEntity(this OrcamentoDbModel model)
+    public static Orcamento ToEntity(
+        this OrcamentoDbModel model)
     {
         var orcamento = new Orcamento(
             model.Id,
@@ -36,6 +37,8 @@ public static class OrcamentoMapper
             model.OrcamentoId,
             model.ServicoId,
             model.ItemEstoqueId,
+            model.NomeItem,
+            model.DescricaoItem,
             model.Quantidade,
             model.ValorUnitario,
             model.ValorTotal,

@@ -40,13 +40,13 @@ public class ServicoRepository(IDbConnectionFactory connectionFactory, SqlFileRe
         return models.Select(x => x.ToEntity());
     }
 
-    public async Task<Servico?> ObterPorNomeAsync(string nome)
+    public async Task<Servico?> ObterPorCodigoInternoAsync(string codigoInterno)
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        var sql = _sqlFileReader.Get("Servico/ObterPorNome.sql");
+        var sql = _sqlFileReader.Get("Servico/ObterPorCodigoInterno.sql");
 
-        var model = await connection.QuerySingleOrDefaultAsync<ServicoDbModel>(sql, new { Nome = nome });
+        var model = await connection.QuerySingleOrDefaultAsync<ServicoDbModel>(sql, new { CodigoInterno = codigoInterno });
 
         return model?.ToEntity();
     }
@@ -74,6 +74,7 @@ public class ServicoRepository(IDbConnectionFactory connectionFactory, SqlFileRe
         return new
         {
             servico.Id,
+            servico.CodigoInterno,
             servico.Nome,
             servico.Descricao,
             servico.Preco,

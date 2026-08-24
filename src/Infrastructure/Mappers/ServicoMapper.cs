@@ -6,6 +6,7 @@ public static class ServicoMapper
     {
         var servico = new Servico(
             model.Id,
+            model.CodigoInterno,
             model.Nome,
             model.Descricao,
             model.Preco,

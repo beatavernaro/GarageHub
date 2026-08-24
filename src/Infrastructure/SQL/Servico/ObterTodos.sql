@@ -1,5 +1,6 @@
 SELECT
     id,
+    codigo_interno,
     nome,
     descricao,
     preco,
