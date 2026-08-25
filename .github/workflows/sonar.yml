@@ -60,7 +60,7 @@ jobs:
             /k:"beatavernaro_GarageHub" `
             /o:"beatavernaro" `
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
-            /d:sonar.cs.opencover.reportsPaths="tests/GarageHub.Tests/TestResults/coverage.opencover.xml"
+            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml"
 
       - name: Restore
         run: dotnet restore
@@ -71,7 +71,7 @@ jobs:
       - name: Run tests with coverage
         shell: powershell
         run: |
-          dotnet test tests/GarageHub.Tests/GarageHub.Tests.csproj `
+          dotnet test tests/Tests/Tests.csproj `
             --no-build `
             /p:CollectCoverage=true `
             /p:CoverletOutputFormat=opencover `
