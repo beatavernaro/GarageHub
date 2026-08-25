@@ -23,9 +23,12 @@ public class OrdemServicoValidator : AbstractValidator<OrdemServico>
             .IsInEnum()
             .WithMessage("Status da ordem de serviço inválido.");
 
-        RuleFor(x => x.Itens)
+        RuleFor(x => x.Servicos)
             .NotEmpty()
             .WithMessage("A ordem de serviço deve possuir pelo menos um serviço.");
+
+        RuleForEach(x => x.Servicos)
+            .SetValidator(new OrdemServicoServicoValidator());
 
         RuleForEach(x => x.Itens)
             .SetValidator(new OrdemServicoItemEstoqueValidator());
@@ -33,10 +36,6 @@ public class OrdemServicoValidator : AbstractValidator<OrdemServico>
         RuleFor(x => x.Desconto)
             .GreaterThanOrEqualTo(0)
             .WithMessage("O desconto não pode ser negativo.");
-
-        RuleFor(x => x)
-            .Must(x => x.Desconto <= x.Itens.Sum(i => i.ValorTotal))
-            .WithMessage("O desconto não pode ser maior que o valor dos serviços.");
 
         RuleFor(x => x.DataFinalizacao)
             .GreaterThanOrEqualTo(x => x.DataInicio)

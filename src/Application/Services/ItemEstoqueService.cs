@@ -70,18 +70,21 @@ public class ItemEstoqueService(
 
         var codigoInterno = NormalizarCodigo(dto.CodigoInterno);
 
-        var outroItem =            await _itemEstoqueRepository.ObterPorCodigoInternoAsync(codigoInterno);
+        var outroItem = await _itemEstoqueRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         if (outroItem is not null && outroItem.Id != id)
-            throw new DomainException(                "Já existe outro item cadastrado com este código interno.");
+            throw new DomainException("Já existe outro item cadastrado com este código interno.");
 
         item.Atualizar(
-            codigoInterno,
-            dto.Nome,
-            dto.Descricao,
-            dto.Tipo);
+    codigoInterno,
+    dto.Nome,
+    dto.Descricao,
+    dto.Tipo,
+    _currentUser.Id);
 
-        item.AlterarPreco(dto.Preco);
+        item.AlterarPreco(
+    dto.Preco,
+    _currentUser.Id);
 
         await _itemEstoqueRepository.AtualizarAsync(item);
     }
@@ -91,7 +94,7 @@ public class ItemEstoqueService(
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
             ?? throw new DomainException("Item de estoque não encontrado.");
 
-        item.AdicionarEstoque(quantidade);
+        item.AdicionarEstoque(quantidade, _currentUser.Id);
 
         await _itemEstoqueRepository.AtualizarAsync(item);
     }
@@ -101,7 +104,7 @@ public class ItemEstoqueService(
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
             ?? throw new DomainException("Item de estoque não encontrado.");
 
-        item.RemoverEstoque(quantidade);
+        item.RemoverEstoque(quantidade, _currentUser.Id);
 
         await _itemEstoqueRepository.AtualizarAsync(item);
     }
@@ -111,7 +114,7 @@ public class ItemEstoqueService(
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
             ?? throw new DomainException("Item de estoque não encontrado.");
 
-        item.AlterarPreco(novoPreco);
+        item.AlterarPreco(novoPreco, _currentUser.Id);
 
         await _itemEstoqueRepository.AtualizarAsync(item);
     }

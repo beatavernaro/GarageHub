@@ -13,7 +13,7 @@ public class ItemEstoque : BaseEntity
     public decimal Preco { get; private set; }
     public int Estoque { get; private set; }
 
-    public ItemEstoque(string codigoInterno, string nome, TipoItemEstoque tipo, decimal preco, int estoque, Guid criadoPorId, string? descricao = null) : base(criadoPorId)
+    public ItemEstoque(string codigoInterno, string nome, TipoItemEstoque tipo, decimal preco, int estoque, Guid? criadoPorId, string? descricao = null) : base(criadoPorId)
     {
         CodigoInterno = codigoInterno;
         Nome = nome;
@@ -34,7 +34,7 @@ public class ItemEstoque : BaseEntity
         Tipo = tipo;
         Preco = preco;
         Estoque = estoque;
-        
+
         Normalizar();
     }
 
@@ -48,10 +48,11 @@ public class ItemEstoque : BaseEntity
     }
 
     public void Atualizar(
-        string codigoInterno,
-        string nome,
-        string? descricao,
-        TipoItemEstoque tipo)
+    string codigoInterno,
+    string nome,
+    string? descricao,
+    TipoItemEstoque tipo,
+    Guid? usuarioId)
     {
         CodigoInterno = codigoInterno;
         Nome = nome;
@@ -59,25 +60,36 @@ public class ItemEstoque : BaseEntity
         Tipo = tipo;
 
         Normalizar();
+        RegistrarAlteracao(usuarioId);
     }
-    public void AlterarPreco(decimal novoPreco)
+
+    public void AlterarPreco(
+        decimal novoPreco,
+        Guid? usuarioId)
     {
         if (novoPreco <= 0)
-            throw new DomainException("O preço deve ser maior que zero.");
+            throw new DomainException(
+                "O preço deve ser maior que zero.");
 
         Preco = novoPreco;
+        RegistrarAlteracao(usuarioId);
     }
 
-    public void AdicionarEstoque(int quantidade)
+    public void AdicionarEstoque(
+        int quantidade,
+        Guid? usuarioId)
     {
         if (quantidade <= 0)
             throw new DomainException(
                 "A quantidade a ser adicionada deve ser maior que zero.");
 
         Estoque += quantidade;
+        RegistrarAlteracao(usuarioId);
     }
 
-    public void RemoverEstoque(int quantidade)
+    public void RemoverEstoque(
+        int quantidade,
+        Guid? usuarioId)
     {
         if (quantidade <= 0)
             throw new DomainException(
@@ -88,5 +100,6 @@ public class ItemEstoque : BaseEntity
                 "Não é possível remover mais itens do que o disponível em estoque.");
 
         Estoque -= quantidade;
+        RegistrarAlteracao(usuarioId);
     }
 }

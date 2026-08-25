@@ -13,7 +13,7 @@ public class Veiculo : BaseEntity
     public int Ano { get; private set; }
     public int Quilometragem { get; private set; }
 
-    public Veiculo(Guid clienteId, string placa, string? chassi, string marca, string modelo, string cor, int ano, int quilometragem, Guid criadoPorId) : base(criadoPorId)
+    public Veiculo(Guid clienteId, string placa, string? chassi, string marca, string modelo, string cor, int ano, int quilometragem, Guid? criadoPorId) : base(criadoPorId)
     {
         ClienteId = clienteId;
         Placa = placa;
@@ -57,7 +57,7 @@ public class Veiculo : BaseEntity
         Cor = Cor.Trim();
     }
 
-    public void Atualizar(string placa, string? chassi, string marca, string modelo, string cor, int ano, int quilometragem, Guid usuarioId)
+    public void Atualizar(string placa, string? chassi, string marca, string modelo, string cor, int ano, int quilometragem, Guid? usuarioId)
     {
         Placa = placa;
         Chassi = chassi;

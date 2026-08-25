@@ -7,26 +7,17 @@ namespace Domain.Entities;
 public class Orcamento : BaseEntity
 {
     private readonly List<OrcamentoItem> _itens = [];
-
     public Guid ClienteId { get; private set; }
-
     public Guid VeiculoId { get; private set; }
-
     public StatusOrcamento Status { get; private set; }
-
     public decimal Desconto { get; private set; }
-
     public decimal ValorTotal { get; private set; }
-
     public DateTime? DataEnvioCliente { get; private set; }
-
     public DateTime? DataAprovacao { get; private set; }
-
     public DateTime? DataRejeicao { get; private set; }
-
     public IReadOnlyCollection<OrcamentoItem> Itens => _itens;
 
-    public void AdicionarItem(OrcamentoItem item, Guid usuarioId)
+    public void AdicionarItem(OrcamentoItem item, Guid? usuarioId)
     {
         ValidarEmElaboracao();
 
@@ -36,34 +27,25 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void RemoverItem(
-    Guid itemId,
-    Guid usuarioId)
+    public void RemoverItem(Guid itemId, Guid? usuarioId)
     {
         if (Status != StatusOrcamento.EmElaboracao)
-            throw new DomainException(
-                "Não é possível remover itens de um orçamento que não está em elaboração.");
+            throw new DomainException("Não é possível remover itens de um orçamento que não está em elaboração.");
 
-        var item = _itens.FirstOrDefault(
-            x => x.Id == itemId && x.Ativo)
-            ?? throw new DomainException(
-                "Item não encontrado no orçamento.");
+        var item = _itens.FirstOrDefault(x => x.Id == itemId && x.Ativo)
+            ?? throw new DomainException("Item não encontrado no orçamento.");
 
         item.Desativar(usuarioId);
 
         CalcularTotal();
     }
 
-    public void AlterarQuantidadeItem(
-        Guid itemId,
-        int quantidade,
-        Guid usuarioId)
+    public void AlterarQuantidadeItem(Guid itemId, int quantidade, Guid? usuarioId)
     {
         ValidarEmElaboracao();
 
         var item = _itens.FirstOrDefault(x => x.Id == itemId && x.Ativo)
-            ?? throw new DomainException(
-                "Item não encontrado no orçamento.");
+            ?? throw new DomainException("Item não encontrado no orçamento.");
 
         item.AlterarQuantidade(quantidade, usuarioId);
 
@@ -71,16 +53,12 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void AlterarValorUnitarioItem(
-        Guid itemId,
-        decimal valorUnitario,
-        Guid usuarioId)
+    public void AlterarValorUnitarioItem(Guid itemId, decimal valorUnitario, Guid? usuarioId)
     {
         ValidarEmElaboracao();
 
         var item = _itens.FirstOrDefault(x => x.Id == itemId && x.Ativo)
-            ?? throw new DomainException(
-                "Item não encontrado no orçamento.");
+            ?? throw new DomainException("Item não encontrado no orçamento.");
 
         item.AlterarValorUnitario(valorUnitario, usuarioId);
 
@@ -88,23 +66,19 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void AplicarDesconto(
-        decimal desconto,
-        Guid usuarioId)
+    public void AplicarDesconto(decimal desconto, Guid? usuarioId)
     {
         ValidarEmElaboracao();
 
         if (desconto < 0)
-            throw new DomainException(
-                "O desconto não pode ser negativo.");
+            throw new DomainException("O desconto não pode ser negativo.");
 
         var subtotal = _itens
             .Where(x => x.Ativo)
             .Sum(x => x.ValorTotal);
 
         if (desconto > subtotal)
-            throw new DomainException(
-                "O desconto não pode ser maior que o valor do orçamento.");
+            throw new DomainException("O desconto não pode ser maior que o valor do orçamento.");
 
         Desconto = desconto;
 
@@ -112,13 +86,12 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void ColocarEmAguardandoCliente(Guid usuarioId)
+    public void ColocarEmAguardandoCliente(Guid? usuarioId)
     {
         ValidarStatus(StatusOrcamento.EmElaboracao);
 
         if (!_itens.Any(x => x.Ativo))
-            throw new DomainException(
-                "O orçamento deve possuir pelo menos um item.");
+            throw new DomainException("O orçamento deve possuir pelo menos um item.");
 
         Status = StatusOrcamento.AguardandoCliente;
         DataEnvioCliente = DateTime.UtcNow;
@@ -126,13 +99,12 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void Aprovar(Guid usuarioId)
+    public void Aprovar(Guid? usuarioId)
     {
         ValidarStatus(StatusOrcamento.AguardandoCliente);
 
         if (!_itens.Any(x => x.Ativo))
-            throw new DomainException(
-                "O orçamento deve possuir pelo menos um item.");
+            throw new DomainException("O orçamento deve possuir pelo menos um item.");
 
         Status = StatusOrcamento.Aprovado;
         DataAprovacao = DateTime.UtcNow;
@@ -141,7 +113,7 @@ public class Orcamento : BaseEntity
     }
 
 
-    public void Rejeitar(Guid usuarioId)
+    public void Rejeitar(Guid? usuarioId)
     {
         ValidarStatus(StatusOrcamento.AguardandoCliente);
 
@@ -151,7 +123,7 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void Cancelar(Guid usuarioId)
+    public void Cancelar(Guid? usuarioId)
     {
         if (Status is StatusOrcamento.Aprovado
             or StatusOrcamento.Rejeitado
@@ -167,7 +139,7 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void Expirar(Guid usuarioId)
+    public void Expirar(Guid? usuarioId)
     {
         ValidarStatus(StatusOrcamento.AguardandoCliente);
 
@@ -184,7 +156,7 @@ public class Orcamento : BaseEntity
         RegistrarAlteracao(usuarioId);
     }
 
-    public void VerificarExpiracao(Guid usuarioId)
+    public void VerificarExpiracao(Guid? usuarioId)
     {
         if (Status != StatusOrcamento.AguardandoCliente)
             return;
@@ -230,7 +202,7 @@ public class Orcamento : BaseEntity
     public Orcamento(
         Guid clienteId,
         Guid veiculoId,
-        Guid criadoPorId)
+        Guid? criadoPorId)
         : base(criadoPorId)
     {
         ClienteId = clienteId;

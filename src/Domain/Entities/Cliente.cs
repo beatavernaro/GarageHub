@@ -30,7 +30,7 @@ public class Cliente : BaseEntity
     string telefone,
     string email,
     Endereco? endereco,
-    Guid usuarioId)
+    Guid? usuarioId)
 {
     Nome = nome;
     TipoPessoa = tipoPessoa;
@@ -49,7 +49,7 @@ public class Cliente : BaseEntity
         TipoPessoa tipoPessoa,
         string telefone,
         string email,
-        Guid criadoPorId,
+        Guid? criadoPorId,
         Endereco? endereco = null)
         : base(criadoPorId)
     {

@@ -25,7 +25,7 @@ public class Servico : BaseEntity
         string codigoInterno,
         string nome,
         string? descricao,
-        Guid usuarioId)
+        Guid? usuarioId)
     {
         CodigoInterno = codigoInterno;
         Nome = nome;
@@ -37,7 +37,7 @@ public class Servico : BaseEntity
 
     public void AlterarPreco(
         decimal novoPreco,
-        Guid usuarioId)
+        Guid? usuarioId)
     {
         if (novoPreco <= 0)
             throw new DomainException(
@@ -52,13 +52,15 @@ public class Servico : BaseEntity
         string nome,
         string? descricao,
         decimal preco,
-        Guid criadoPorId)
+        Guid? criadoPorId)
         : base(criadoPorId)
     {
         CodigoInterno = codigoInterno;
         Nome = nome;
         Descricao = descricao;
         Preco = preco;
+
+        Normalizar();
     }
 
     public Servico(
@@ -84,5 +86,7 @@ public class Servico : BaseEntity
         Nome = nome;
         Descricao = descricao;
         Preco = preco;
+
+        Normalizar();
     }
 }

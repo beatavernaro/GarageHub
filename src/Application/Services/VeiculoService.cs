@@ -71,8 +71,6 @@ public class VeiculoService(IVeiculoRepository veiculoRepository, IClienteReposi
             dto.Quilometragem,
             _currentUser.Id);
 
-        veiculo.Normalizar();
-
         await _veiculoRepository.AdicionarAsync(veiculo);
 
         return MapearParaDto(veiculo);

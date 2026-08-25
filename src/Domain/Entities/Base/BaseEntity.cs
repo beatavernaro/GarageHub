@@ -42,7 +42,7 @@ public abstract class BaseEntity
 
     public bool Ativo { get; protected set; }
 
-    public void Ativar(Guid usuario)
+    public void Ativar(Guid? usuario)
     {
         if (Ativo)
             return;
@@ -51,7 +51,7 @@ public abstract class BaseEntity
         RegistrarAlteracao(usuario);
     }
 
-    public void Desativar(Guid usuario)
+    public void Desativar(Guid? usuario)
     {
         if (!Ativo)
             return;
@@ -60,7 +60,7 @@ public abstract class BaseEntity
         RegistrarAlteracao(usuario);
     }
 
-    protected void RegistrarAlteracao(Guid usuarioId)
+    protected void RegistrarAlteracao(Guid? usuarioId)
     {
         DataAlteracao = DateTime.UtcNow;
         AlteradoPorId = usuarioId;

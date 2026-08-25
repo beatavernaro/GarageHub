@@ -5,12 +5,39 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+
+    <!-- Cobertura -->
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>./TestResults/coverage.cobertura.xml</CoverletOutput>
+    <CoverletOutputFormat>cobertura,json</CoverletOutputFormat>
+
+    <!-- Mínimo obrigatório -->
+    <Threshold>80</Threshold>
+    <ThresholdType>line</ThresholdType>
+    <ThresholdStat>total</ThresholdStat>
+
+    <Include>
+      [Domain]*,
+      [Application]Application.Services.*
+    </Include>
+
+    <Exclude>
+      [Domain]Domain.Enums.*,
+      [Domain]Domain.Exceptions.*,
+      [Application]Application.DTOs.*,
+      [Application]Application.Interfaces.*
+    </Exclude>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.4" />
+
     <PackageReference Include="FluentAssertions" Version="8.10.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>

@@ -15,10 +15,6 @@ public class OrdemServicoItemEstoque : BaseEntity
     public decimal ValorUnitario { get; private set; }
     public decimal ValorTotal { get; private set; }
 
-    protected OrdemServicoItemEstoque()
-    {
-    }
-
     // Construtor utilizado na criação da entidade
     public OrdemServicoItemEstoque(
         Guid ordemServicoId,
@@ -27,16 +23,14 @@ public class OrdemServicoItemEstoque : BaseEntity
         string? descricaoItem,
         int quantidade,
         decimal valorUnitario,
-        Guid criadoPorId)
+        Guid? criadoPorId)
         : base(criadoPorId)
     {
         if (quantidade <= 0)
-            throw new DomainException(
-                "A quantidade deve ser maior que zero.");
+            throw new DomainException("A quantidade deve ser maior que zero.");
 
         if (valorUnitario <= 0)
-            throw new DomainException(
-                "O valor unitário deve ser maior que zero.");
+            throw new DomainException("O valor unitário deve ser maior que zero.");
 
         OrdemServicoId = ordemServicoId;
         ItemEstoqueId = itemEstoqueId;

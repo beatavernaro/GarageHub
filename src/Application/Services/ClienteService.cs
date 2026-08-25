@@ -51,8 +51,6 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
             _currentUser.Id,
             endereco);
 
-        cliente.Normalizar();
-
         await _clienteRepository.AdicionarAsync(cliente);
 
         return MapearParaDto(cliente);
@@ -71,8 +69,6 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
             dto.Email,
             endereco,
             _currentUser.Id);
-
-        cliente.Normalizar();
 
         await _clienteRepository.AtualizarAsync(cliente);
     }

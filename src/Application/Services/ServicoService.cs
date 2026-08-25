@@ -61,8 +61,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     public async Task<ServicoDto> CriarAsync(
         CriarServicoDto dto)
     {
-        var codigoInterno = dto.CodigoInterno.Trim();
-
+        var codigoInterno = dto.CodigoInterno.Trim().ToUpperInvariant();
         var servicoExistente = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         if (servicoExistente is not null)
@@ -75,8 +74,6 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
             dto.Preco,
             _currentUser.Id);
 
-        servico.Normalizar();
-
         await _servicoRepository.AdicionarAsync(servico);
 
         return MapearParaDto(servico);
@@ -88,7 +85,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
             await _servicoRepository.ObterPorIdAsync(id)
             ?? throw new DomainException("Serviço não encontrado.");
 
-        var codigoInterno = dto.CodigoInterno.Trim();
+        var codigoInterno = dto.CodigoInterno.Trim().ToUpperInvariant();
 
         var outroServico = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
