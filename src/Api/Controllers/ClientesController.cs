@@ -1,10 +1,9 @@
 using Application.DTOs.Cliente;
 using Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GarageHub.Api.Controllers;
+namespace Api.Controllers;
 
 [ApiController]
 [Authorize]
