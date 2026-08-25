@@ -16,7 +16,7 @@ VALUES
     '00000000-0000-0000-0000-000000000001',
     'Administrador',
     'admin@garagehub.com',
-    '$2a$11$abcdefghijklmnopqrstuv',
+    '$2a$11$mzedECfzuDuxh9gu.lWGEe2Wacwk9qrRv7Qpk.UxBeDT0Zvm/1RyO',
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE
@@ -25,7 +25,7 @@ VALUES
     '00000000-0000-0000-0000-000000000002',
     'Atendente',
     'atendente@garagehub.com',
-    '$2a$11$abcdefghijklmnopqrstuv',
+    '$2a$11$F2LYwi8lPVpvVSbMTjLlZuXX9..oTb3nZpXdOB7RXoE8AccrroXGO',
     '00000000-0000-0000-0000-000000000001',
     NOW(),
     TRUE

@@ -1,11 +1,13 @@
 using Application.DTOs.OrdemServico;
 using Application.Interfaces.Services;
 using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GarageHub.Api.Controllers;
+namespace Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class OrdensServicoController(
     IOrdemServicoService ordemServicoService)
@@ -51,6 +53,7 @@ public class OrdensServicoController(
         return Ok(ordemServico);
     }
 
+    [Authorize]
     [HttpGet("acompanhamento/{placa}")]
     [EndpointSummary(
     "Acompanha a ordem de serviço pela placa")]

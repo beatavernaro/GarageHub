@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
+using Application.Interfaces.Security;
 using Application.Interfaces.Services;
 using Application.Services;
 using Infrastructure.Database;
@@ -20,7 +21,14 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory(connectionString));
 
         services.AddSingleton<SqlFileReader>();
-        services.AddScoped<ICurrentUser, CurrentUser>();
+
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+
+        services.AddScoped<ITokenService, JwtTokenService>();
+
+        services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IClienteService, ClienteService>();
@@ -36,7 +44,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
         services.AddScoped<IOrcamentoService, OrcamentoService>();
-        
+
         services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
         services.AddScoped<IOrdemServicoService, OrdemServicoService>();
         return services;

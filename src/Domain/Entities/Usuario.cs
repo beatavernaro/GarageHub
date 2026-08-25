@@ -2,11 +2,52 @@ using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
-public class Usuario(string nome, string email, string senhaHash, Guid criadoPorId) : BaseEntity(criadoPorId)
+public class Usuario : BaseEntity
 {
-    public string Nome { get; private set; } = nome;
-    public string Email { get; private set; } = email;
-    public string SenhaHash { get; private set; } = senhaHash;
+    public string Nome { get; private set; } = string.Empty;
+
+    public string Email { get; private set; } = string.Empty;
+
+    public string SenhaHash { get; private set; } = string.Empty;
+
+    public Usuario(
+        string nome,
+        string email,
+        string senhaHash,
+        Guid criadoPorId)
+        : base(criadoPorId)
+    {
+        Nome = nome;
+        Email = email;
+        SenhaHash = senhaHash;
+
+        Normalizar();
+    }
+
+    public Usuario(
+        Guid id,
+        string nome,
+        string email,
+        string senhaHash,
+        Guid? criadoPorId,
+        DateTime dataCriacao,
+        DateTime? dataAlteracao,
+        Guid? alteradoPorId,
+        bool ativo)
+        : base(
+            id,
+            dataCriacao,
+            criadoPorId,
+            dataAlteracao,
+            alteradoPorId,
+            ativo)
+    {
+        Nome = nome;
+        Email = email;
+        SenhaHash = senhaHash;
+
+        Normalizar();
+    }
 
     public void Normalizar()
     {

@@ -1,10 +1,12 @@
 using Application.DTOs.Servico;
 using Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GarageHub.Api.Controllers;
+namespace Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ServicosController(
     IServicoService servicoService) : ControllerBase

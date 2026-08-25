@@ -31,6 +31,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
 
     public async Task<ServicoDto?> ObterPorCodigoInternoAsync(string codigoInterno)
     {
+        codigoInterno = codigoInterno.Trim().ToUpper();
         var servico = await _servicoRepository.ObterPorCodigoInternoAsync(codigoInterno);
 
         return servico is null

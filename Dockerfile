@@ -6,7 +6,7 @@ COPY . .
 
 RUN dotnet restore
 
-RUN dotnet publish src/Api/GarageHub.Api.csproj \
+RUN dotnet publish src/Api/Api.csproj \
     -c Release \
     -o /app/publish \
     --no-restore
@@ -20,4 +20,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "GarageHub.Api.dll"]
+ENTRYPOINT ["dotnet", "Api.dll"]

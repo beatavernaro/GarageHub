@@ -13,6 +13,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=garagehub;Username=postgres;Password=postgres"
+      Jwt__Key: "GarageHub-Development-Jwt-Key-2026-FIAP-Local-Environment"
 
     depends_on:
       - db

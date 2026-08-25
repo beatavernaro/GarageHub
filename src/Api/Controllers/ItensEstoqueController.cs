@@ -1,10 +1,12 @@
 using Application.DTOs.ItemEstoque;
 using Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GarageHub.Api.Controllers;
+namespace Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class ItensEstoqueController(IItemEstoqueService itemEstoqueService) : ControllerBase

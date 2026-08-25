@@ -1,11 +1,13 @@
 using Application.DTOs.Orcamento;
 using Application.Interfaces.Services;
 using Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GarageHub.Api.Controllers;
+namespace Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class OrcamentosController(
     IOrcamentoService orcamentoService) : ControllerBase
@@ -213,6 +215,7 @@ public class OrcamentosController(
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpPost("{id:guid}/aprovar")]
     [EndpointSummary("Aprova um orçamento")]
     [EndpointDescription(
@@ -233,6 +236,7 @@ public class OrcamentosController(
         return Ok(resultado);
     }
 
+    [AllowAnonymous]
     [HttpPost("{id:guid}/rejeitar")]
     [EndpointSummary("Rejeita um orçamento")]
     [EndpointDescription(

@@ -25,20 +25,23 @@ public class Cliente : BaseEntity
     }
 
     public void Atualizar(
-        string nome,
-        TipoPessoa tipoPessoa,
-        string telefone,
-        string email,
-        Endereco? endereco)
-    {
-        Nome = nome;
-        TipoPessoa = tipoPessoa;
-        Telefone = telefone;
-        Email = email;
-        Endereco = endereco;
+    string nome,
+    TipoPessoa tipoPessoa,
+    string telefone,
+    string email,
+    Endereco? endereco,
+    Guid usuarioId)
+{
+    Nome = nome;
+    TipoPessoa = tipoPessoa;
+    Telefone = telefone;
+    Email = email;
+    Endereco = endereco;
 
-        Normalizar();
-    }
+    Normalizar();
+
+    RegistrarAlteracao(usuarioId);
+}
 
     public Cliente(
         string nome,

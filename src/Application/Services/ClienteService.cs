@@ -69,7 +69,8 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
             dto.TipoPessoa,
             dto.Telefone,
             dto.Email,
-            endereco);
+            endereco,
+            _currentUser.Id);
 
         cliente.Normalizar();
 
