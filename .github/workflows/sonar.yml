@@ -60,7 +60,8 @@ jobs:
             /k:"beatavernaro_GarageHub" `
             /o:"beatavernaro" `
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
-            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml"
+            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml" `
+            /d:sonar.coverage.exclusions="src/Api/**,src/Infrastructure/**,src/Application/DTOs/**,src/Application/Interfaces/**,src/Domain/Enums/**,src/Domain/Exceptions/**"
 
       - name: Restore
         run: dotnet restore
