@@ -17,4 +17,8 @@ public interface IOrdemServicoService
         StatusServico status);
 
     Task EntregarAsync(Guid id);
+
+    Task<TempoMedioOrdensServicoDto> ObterTempoMedioAsync();
+
+    Task<AcompanhamentoOrdemServicoDto?> ObterAcompanhamentoAsync(string placa);
 }

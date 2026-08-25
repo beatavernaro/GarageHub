@@ -38,6 +38,25 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
             : MapearParaDto(servico);
     }
 
+    public async Task<IEnumerable<TempoMedioServicoDto>>
+    ObterTempoMedioAsync()
+    {
+        var tempos =
+            await _servicoRepository
+                .ObterTemposMediosAsync();
+
+        return tempos.Select(x =>
+            new TempoMedioServicoDto
+            {
+                ServicoId = x.ServicoId,
+                CodigoInterno = x.CodigoInterno,
+                NomeServico = x.NomeServico,
+                QuantidadeExecucoes = x.QuantidadeExecucoes,
+                TempoMedio =
+                    FormatarTempo(x.TempoMedioSegundos)
+            });
+    }
+
     public async Task<ServicoDto> CriarAsync(
         CriarServicoDto dto)
     {
@@ -118,15 +137,41 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     }
 
     private static ServicoDto MapearParaDto(Servico servico)
-{
-    return new ServicoDto
     {
-        Id = servico.Id,
-        CodigoInterno = servico.CodigoInterno,
-        Nome = servico.Nome,
-        Descricao = servico.Descricao,
-        Preco = servico.Preco,
-        Ativo = servico.Ativo
-    };
-}
+        return new ServicoDto
+        {
+            Id = servico.Id,
+            CodigoInterno = servico.CodigoInterno,
+            Nome = servico.Nome,
+            Descricao = servico.Descricao,
+            Preco = servico.Preco,
+            Ativo = servico.Ativo
+        };
+    }
+
+    private static string FormatarTempo(
+    double segundos)
+    {
+        var minutosTotais =
+            (long)Math.Round(
+                segundos / 60,
+                MidpointRounding.AwayFromZero);
+
+        var dias =
+            minutosTotais / 1440;
+
+        var horas =
+            (minutosTotais % 1440) / 60;
+
+        var minutos =
+            minutosTotais % 60;
+
+        if (dias > 0)
+            return $"{dias}d {horas}h {minutos}min";
+
+        if (horas > 0)
+            return $"{horas}h {minutos}min";
+
+        return $"{minutos}min";
+    }
 }

@@ -1,3 +1,4 @@
+using Application.DTOs.Servico;
 using Domain.Entities;
 
 namespace Application.Interfaces.Repositories;
@@ -13,5 +14,7 @@ public interface IServicoRepository
     Task AdicionarAsync(Servico servico);
 
     Task AtualizarAsync(Servico servico);
+
+    Task<IEnumerable<TempoMedioServicoDto>> ObterTemposMediosAsync();
 
 }

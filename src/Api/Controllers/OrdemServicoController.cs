@@ -51,6 +51,30 @@ public class OrdensServicoController(
         return Ok(ordemServico);
     }
 
+    [HttpGet("acompanhamento/{placa}")]
+    [EndpointSummary(
+    "Acompanha a ordem de serviço pela placa")]
+    [EndpointDescription(
+    "Retorna a ordem de serviço mais recente do veículo para acompanhamento pelo cliente.")]
+    [ProducesResponseType(
+    typeof(AcompanhamentoOrdemServicoDto),
+    StatusCodes.Status200OK)]
+    [ProducesResponseType(
+    StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AcompanhamentoOrdemServicoDto>>
+    ObterAcompanhamento(
+        [FromRoute] string placa)
+    {
+        var acompanhamento =
+            await _ordemServicoService
+                .ObterAcompanhamentoAsync(placa);
+
+        if (acompanhamento is null)
+            return NotFound();
+
+        return Ok(acompanhamento);
+    }
+
     [HttpPatch(
         "{id:guid}/servicos/{ordemServicoServicoId:guid}/status")]
     [EndpointSummary(
@@ -94,5 +118,23 @@ public class OrdensServicoController(
             .EntregarAsync(id);
 
         return NoContent();
+    }
+
+    [HttpGet("tempo-medio")]
+    [EndpointSummary(
+    "Obtém o tempo médio das ordens de serviço")]
+    [EndpointDescription(
+    "Retorna o tempo médio das ordens finalizadas e o tempo de execução de cada ordem.")]
+    [ProducesResponseType(
+    typeof(TempoMedioOrdensServicoDto),
+    StatusCodes.Status200OK)]
+    public async Task<ActionResult<TempoMedioOrdensServicoDto>>
+    ObterTempoMedio()
+    {
+        var resultado =
+            await _ordemServicoService
+                .ObterTempoMedioAsync();
+
+        return Ok(resultado);
     }
 }

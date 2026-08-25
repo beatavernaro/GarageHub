@@ -16,17 +16,17 @@ public sealed class ExceptionHandlingMiddleware(
         {
             await _next(context);
         }
-        catch (NotFoundException ex)
+        catch (DomainException ex)
         {
             _logger.LogWarning(
                 ex,
-                "Resource not found. Path: {Path}",
+                "Business rule violation. Path: {Path}",
                 context.Request.Path);
 
             await HandleExceptionAsync(
                 context,
-                StatusCodes.Status404NotFound,
-                "Resource not found.",
+                StatusCodes.Status400BadRequest,
+                "Business rule violation.",
                 ex.Message);
         }
         catch (Exception ex)

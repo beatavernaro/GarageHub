@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace Infrastructure.Mappers;
 
 public class ServicoDbModel

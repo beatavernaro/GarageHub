@@ -1,6 +1,8 @@
 UPDATE ordens_servico_servicos
 SET
     status = @Status,
+    data_inicio = @DataInicio,
+    data_finalizacao = @DataFinalizacao,
     data_alteracao = @DataAlteracao,
     alterado_por_id = @AlteradoPorId
 WHERE id = @Id

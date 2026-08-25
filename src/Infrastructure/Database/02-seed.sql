@@ -117,7 +117,7 @@ VALUES
 (
     '20000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-000000000001',
-    'ABC1234',
+    'ABC1D23',
     '9BWZZZ377VT004251',
     'Volkswagen',
     'Gol',
@@ -131,7 +131,7 @@ VALUES
 (
     '20000000-0000-0000-0000-000000000002',
     '10000000-0000-0000-0000-000000000002',
-    'DEF5678',
+    'DEF5G78',
     '9BWZZZ377VT004252',
     'Chevrolet',
     'Onix',
@@ -240,7 +240,7 @@ VALUES
     '40000000-0000-0000-0000-000000000003',
     'SER0003',
     'Alinhamento',
-    'Alinhamento da direção do veículo',
+    'Alinhamento da direção',
     100.00,
     '00000000-0000-0000-0000-000000000001',
     NOW(),
@@ -272,14 +272,14 @@ VALUES
     '60000000-0000-0000-0000-000000000001',
     '10000000-0000-0000-0000-000000000001',
     '20000000-0000-0000-0000-000000000001',
-    0,
+    2,
     0.00,
-    250.00,
-    NULL,
-    NULL,
+    600.00,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '3 days',
     NULL,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '3 days',
     TRUE
 ),
 (
@@ -288,9 +288,9 @@ VALUES
     '20000000-0000-0000-0000-000000000002',
     2,
     20.00,
-    315.00,
-    NOW() - INTERVAL '1 day',
-    NOW(),
+    280.00,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '2 days',
     NULL,
     '00000000-0000-0000-0000-000000000002',
     NOW() - INTERVAL '2 days',
@@ -301,6 +301,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
 -- ITENS DOS ORÇAMENTOS
+-- SNAPSHOT
 -- ============================================
 
 INSERT INTO orcamentos_itens (
@@ -318,22 +319,74 @@ INSERT INTO orcamentos_itens (
     ativo
 )
 VALUES
+
+-- Orçamento 1 - Serviço troca de óleo
 (
     '70000000-0000-0000-0000-000000000001',
     '60000000-0000-0000-0000-000000000001',
-    '40000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000002',
     NULL,
-    'Troca de Pastilhas de Freio',
-    'Substituição das pastilhas de freio dianteiras',
+    'Troca de Óleo',
+    'Troca do óleo do motor',
     1,
-    250.00,
-    250.00,
+    120.00,
+    120.00,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '3 days',
     TRUE
 ),
+
+-- Orçamento 1 - Serviço alinhamento
 (
     '70000000-0000-0000-0000-000000000002',
+    '60000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000003',
+    NULL,
+    'Alinhamento',
+    'Alinhamento da direção',
+    1,
+    100.00,
+    100.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '3 days',
+    TRUE
+),
+
+-- Orçamento 1 - Óleo
+(
+    '70000000-0000-0000-0000-000000000003',
+    '60000000-0000-0000-0000-000000000001',
+    NULL,
+    '30000000-0000-0000-0000-000000000002',
+    'Óleo 5W30',
+    'Óleo sintético para motor',
+    4,
+    45.00,
+    180.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '3 days',
+    TRUE
+),
+
+-- Orçamento 1 - Filtro
+(
+    '70000000-0000-0000-0000-000000000004',
+    '60000000-0000-0000-0000-000000000001',
+    NULL,
+    '30000000-0000-0000-0000-000000000003',
+    'Filtro de Óleo',
+    'Filtro de óleo do motor',
+    1,
+    35.00,
+    35.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '3 days',
+    TRUE
+),
+
+-- Orçamento 2 - Troca de óleo
+(
+    '70000000-0000-0000-0000-000000000005',
     '60000000-0000-0000-0000-000000000002',
     '40000000-0000-0000-0000-000000000002',
     NULL,
@@ -343,11 +396,13 @@ VALUES
     120.00,
     120.00,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '2 days',
     TRUE
 ),
+
+-- Orçamento 2 - Óleo
 (
-    '70000000-0000-0000-0000-000000000003',
+    '70000000-0000-0000-0000-000000000006',
     '60000000-0000-0000-0000-000000000002',
     NULL,
     '30000000-0000-0000-0000-000000000002',
@@ -357,28 +412,14 @@ VALUES
     45.00,
     180.00,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
-    TRUE
-),
-(
-    '70000000-0000-0000-0000-000000000004',
-    '60000000-0000-0000-0000-000000000002',
-    NULL,
-    '30000000-0000-0000-0000-000000000003',
-    'Filtro de Óleo',
-    'Filtro de óleo do motor',
-    1,
-    35.00,
-    35.00,
-    '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '2 days',
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
--- ORDEM DE SERVIÇO
+-- ORDENS DE SERVIÇO
 -- ============================================
 
 INSERT INTO ordens_servico (
@@ -394,29 +435,51 @@ INSERT INTO ordens_servico (
     data_entrega,
     criado_por_id,
     data_criacao,
+    data_alteracao,
+    alterado_por_id,
     ativo
 )
 VALUES
 (
     '80000000-0000-0000-0000-000000000001',
+    '60000000-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001',
+    3,
+    0.00,
+    600.00,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '1 day 22 hours',
+    NOW() - INTERVAL '1 day 21 hours',
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '1 day 21 hours',
+    '00000000-0000-0000-0000-000000000002',
+    TRUE
+),
+(
+    '80000000-0000-0000-0000-000000000002',
     '60000000-0000-0000-0000-000000000002',
     '10000000-0000-0000-0000-000000000002',
     '20000000-0000-0000-0000-000000000002',
-    0,
+    2,
     20.00,
-    315.00,
-    NULL,
-    NULL,
+    280.00,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '22 hours 30 minutes',
     NULL,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '22 hours 30 minutes',
+    '00000000-0000-0000-0000-000000000002',
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
--- SERVIÇOS DA ORDEM DE SERVIÇO
+-- SERVIÇOS DAS ORDENS DE SERVIÇO
+-- SNAPSHOT + TEMPO DE EXECUÇÃO
 -- ============================================
 
 INSERT INTO ordens_servico_servicos (
@@ -429,11 +492,17 @@ INSERT INTO ordens_servico_servicos (
     valor_unitario,
     valor_total,
     status,
+    data_inicio,
+    data_finalizacao,
     criado_por_id,
     data_criacao,
+    data_alteracao,
+    alterado_por_id,
     ativo
 )
 VALUES
+
+-- OS 1 - Troca de óleo - 40 minutos
 (
     '90000000-0000-0000-0000-000000000001',
     '80000000-0000-0000-0000-000000000001',
@@ -443,16 +512,61 @@ VALUES
     1,
     120.00,
     120.00,
-    0,
+    2,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '1 day 23 hours 20 minutes',
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '1 day 23 hours 20 minutes',
+    '00000000-0000-0000-0000-000000000002',
+    TRUE
+),
+
+-- OS 1 - Alinhamento - 1 hora
+(
+    '90000000-0000-0000-0000-000000000002',
+    '80000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000003',
+    'Alinhamento',
+    'Alinhamento da direção',
+    1,
+    100.00,
+    100.00,
+    2,
+    NOW() - INTERVAL '1 day 23 hours',
+    NOW() - INTERVAL '1 day 22 hours',
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '1 day 22 hours',
+    '00000000-0000-0000-0000-000000000002',
+    TRUE
+),
+
+-- OS 2 - Troca de óleo - 1h30
+(
+    '90000000-0000-0000-0000-000000000003',
+    '80000000-0000-0000-0000-000000000002',
+    '40000000-0000-0000-0000-000000000002',
+    'Troca de Óleo',
+    'Troca do óleo do motor',
+    1,
+    120.00,
+    120.00,
+    2,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '22 hours 30 minutes',
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '22 hours 30 minutes',
+    '00000000-0000-0000-0000-000000000002',
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
--- ITENS DE ESTOQUE DA ORDEM DE SERVIÇO
+-- ITENS DE ESTOQUE DAS ORDENS DE SERVIÇO
+-- SNAPSHOT
 -- ============================================
 
 INSERT INTO ordens_servico_itens_estoque (
@@ -479,7 +593,7 @@ VALUES
     45.00,
     180.00,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '3 days',
     TRUE
 ),
 (
@@ -492,7 +606,20 @@ VALUES
     35.00,
     35.00,
     '00000000-0000-0000-0000-000000000002',
-    NOW(),
+    NOW() - INTERVAL '3 days',
+    TRUE
+),
+(
+    '91000000-0000-0000-0000-000000000003',
+    '80000000-0000-0000-0000-000000000002',
+    '30000000-0000-0000-0000-000000000002',
+    'Óleo 5W30',
+    'Óleo sintético para motor',
+    4,
+    45.00,
+    180.00,
+    '00000000-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '2 days',
     TRUE
 )
 ON CONFLICT (id) DO NOTHING;

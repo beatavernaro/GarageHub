@@ -22,6 +22,10 @@ public class OrdemServicoServicoDbModel
 
     public StatusServico Status { get; init; }
 
+    public DateTime? DataInicio { get; init; }
+
+    public DateTime? DataFinalizacao { get; init; }
+
     public Guid? CriadoPorId { get; init; }
 
     public DateTime DataCriacao { get; init; }

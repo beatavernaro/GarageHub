@@ -118,4 +118,22 @@ public class ServicosController(
 
         return NoContent();
     }
+
+    [HttpGet("tempo-medio")]
+    [EndpointSummary(
+    "Obtém o tempo médio de execução dos serviços")]
+    [EndpointDescription(
+    "Retorna o tempo médio histórico de execução de cada serviço finalizado.")]
+    [ProducesResponseType(
+    typeof(IEnumerable<TempoMedioServicoDto>),
+    StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<TempoMedioServicoDto>>>
+    ObterTempoMedio()
+    {
+        var resultado =
+            await _servicoService
+                .ObterTempoMedioAsync();
+
+        return Ok(resultado);
+    }
 }

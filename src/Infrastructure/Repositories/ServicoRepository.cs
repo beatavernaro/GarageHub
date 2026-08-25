@@ -1,3 +1,4 @@
+using Application.DTOs.Servico;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Dapper;
@@ -67,6 +68,20 @@ public class ServicoRepository(IDbConnectionFactory connectionFactory, SqlFileRe
         var sql = _sqlFileReader.Get("Servico/Atualizar.sql");
 
         await connection.ExecuteAsync(sql, MapearParametros(servico));
+    }
+
+    public async Task<IEnumerable<TempoMedioServicoDto>>
+    ObterTemposMediosAsync()
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        var sql =
+            _sqlFileReader.Get(
+                "Servico/ObterTemposMedios.sql");
+
+        return await connection
+            .QueryAsync<TempoMedioServicoDto>(sql);
     }
 
     private static object MapearParametros(Servico servico)

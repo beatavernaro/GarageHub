@@ -368,7 +368,6 @@ CREATE TABLE ordens_servico (
 
 CREATE TABLE ordens_servico_servicos (
     id UUID PRIMARY KEY,
-
     ordem_servico_id UUID NOT NULL,
     servico_id UUID NOT NULL,
 
@@ -382,9 +381,11 @@ CREATE TABLE ordens_servico_servicos (
 
     -- 0 = AguardandoExecucao
     -- 1 = EmExecucao
-    -- 2 = AguardandoPecas
-    -- 3 = Finalizada
+    -- 2 = Finalizada
     status INTEGER NOT NULL DEFAULT 0,
+
+    data_inicio TIMESTAMPTZ,
+    data_finalizacao TIMESTAMPTZ,
 
     criado_por_id UUID NOT NULL,
     data_criacao TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -409,7 +410,7 @@ CREATE TABLE ordens_servico_servicos (
         REFERENCES usuarios(id),
 
     CONSTRAINT ck_os_servicos_status
-        CHECK (status BETWEEN 0 AND 3),
+        CHECK (status BETWEEN 0 AND 2),
 
     CONSTRAINT ck_os_servicos_quantidade
         CHECK (quantidade > 0),

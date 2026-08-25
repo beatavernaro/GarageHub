@@ -4,8 +4,7 @@ namespace Infrastructure.Mappers;
 
 public static class OrdemServicoMapper
 {
-    public static OrdemServico ToEntity(
-        this OrdemServicoDbModel model)
+    public static OrdemServico ToEntity(this OrdemServicoDbModel model)
     {
         var itens = model.Itens
             .Select(x => new OrdemServicoItemEstoque(
@@ -25,22 +24,24 @@ public static class OrdemServicoMapper
             .ToList();
 
         var servicos = model.Servicos
-            .Select(x => new OrdemServicoServico(
-                x.Id,
-                x.OrdemServicoId,
-                x.ServicoId,
-                x.NomeServico,
-                x.DescricaoServico,
-                x.Quantidade,
-                x.ValorUnitario,
-                x.ValorTotal,
-                x.Status,
-                x.CriadoPorId,
-                x.DataCriacao,
-                x.DataAlteracao,
-                x.AlteradoPorId,
-                x.Ativo))
-            .ToList();
+    .Select(x => new OrdemServicoServico(
+        x.Id,
+        x.OrdemServicoId,
+        x.ServicoId,
+        x.NomeServico,
+        x.DescricaoServico,
+        x.Quantidade,
+        x.ValorUnitario,
+        x.ValorTotal,
+        x.Status,
+        x.DataInicio,
+        x.DataFinalizacao,
+        x.CriadoPorId,
+        x.DataCriacao,
+        x.DataAlteracao,
+        x.AlteradoPorId,
+        x.Ativo))
+    .ToList();
 
         return new OrdemServico(
             model.Id,

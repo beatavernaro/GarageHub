@@ -10,6 +10,7 @@ public interface IServicoService
     Task<IEnumerable<ServicoDto>> ObterTodosAsync();
 
     Task<ServicoDto?> ObterPorCodigoInternoAsync(string codigoInterno);
+    Task<IEnumerable<TempoMedioServicoDto>> ObterTempoMedioAsync();
 
     Task<ServicoDto> CriarAsync(CriarServicoDto dto);
 

@@ -1,3 +1,4 @@
+using Application.DTOs.OrdemServico;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Dapper;
@@ -94,6 +95,35 @@ public class OrdemServicoRepository(
         return ordens.Select(x => x.ToEntity());
     }
 
+    public async Task<OrdemServico?> ObterAtualPorPlacaAsync(
+    string placa)
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        var sql =
+            _sqlFileReader.Get(
+                "OrdemServico/ObterAtualPorPlaca.sql");
+
+        using var multi =
+            await connection.QueryMultipleAsync(
+                sql,
+                new { Placa = placa });
+
+        var model =
+            await multi.ReadSingleOrDefaultAsync<OrdemServicoDbModel>();
+
+        if (model is null)
+            return null;
+
+        model.Servicos =
+        [
+            .. await multi.ReadAsync<OrdemServicoServicoDbModel>()
+        ];
+
+        return model.ToEntity();
+    }
+
     public async Task AdicionarAsync(
         OrdemServico ordemServico)
     {
@@ -135,6 +165,8 @@ public class OrdemServicoRepository(
                         servico.ValorUnitario,
                         servico.ValorTotal,
                         Status = (int)servico.Status,
+                        servico.DataInicio,
+                        servico.DataFinalizacao,
                         servico.CriadoPorId,
                         servico.DataCriacao,
                         servico.DataAlteracao,
@@ -196,11 +228,7 @@ public class OrdemServicoRepository(
     }
 
     public async Task AtualizarServicoStatusAsync(
-        Guid ordemServicoId,
-        Guid ordemServicoServicoId,
-        StatusServico status,
-        DateTime dataAlteracao,
-        Guid usuarioId)
+    OrdemServicoServico servico)
     {
         using var connection =
             _connectionFactory.CreateConnection();
@@ -213,12 +241,27 @@ public class OrdemServicoRepository(
             sql,
             new
             {
-                OrdemServicoId = ordemServicoId,
-                Id = ordemServicoServicoId,
-                Status = (int)status,
-                DataAlteracao = dataAlteracao,
-                AlteradoPorId = usuarioId
+                servico.Id,
+                servico.OrdemServicoId,
+                Status = (int)servico.Status,
+                servico.DataInicio,
+                servico.DataFinalizacao,
+                servico.DataAlteracao,
+                servico.AlteradoPorId
             });
+    }
+
+    public async Task<IEnumerable<TempoOrdemServicoDto>> ObterTemposOrdensAsync()
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        var sql =
+            _sqlFileReader.Get(
+                "OrdemServico/ObterTemposOrdens.sql");
+
+        return await connection
+            .QueryAsync<TempoOrdemServicoDto>(sql);
     }
 
     private static object MapearParametros(

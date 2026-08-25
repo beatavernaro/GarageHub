@@ -27,6 +27,8 @@ SELECT
     valor_unitario AS ValorUnitario,
     valor_total AS ValorTotal,
     status AS Status,
+    data_inicio AS DataInicio,
+    data_finalizacao AS DataFinalizacao,
     criado_por_id AS CriadoPorId,
     data_criacao AS DataCriacao,
     data_alteracao AS DataAlteracao,
