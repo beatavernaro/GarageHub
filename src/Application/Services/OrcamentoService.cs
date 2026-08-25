@@ -389,7 +389,7 @@ public class OrcamentoService(
         {
             var itemEstoque =
                 await _itemEstoqueRepository.ObterPorIdAsync(
-                    item.ItemEstoqueId!.Value);
+                    item.ItemEstoqueId.GetValueOrDefault());
 
             if (itemEstoque is null)
                 continue;

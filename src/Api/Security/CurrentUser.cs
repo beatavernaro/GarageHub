@@ -1,6 +1,6 @@
 using Application.Interfaces;
 
-namespace GarageHub.Api.Security;
+namespace Api.Security;
 
 public class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {
@@ -11,14 +11,13 @@ public class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUse
         get
         {
             var userId = _httpContextAccessor.HttpContext?
-                    .User
-                    .FindFirst("sub")?
-                    .Value;
+                .User
+                .FindFirst("sub")?
+                .Value;
 
-            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var id))
-                throw new UnauthorizedAccessException("Usuário não autenticado.");
-
-            return id;
+            return Guid.TryParse(userId, out var id)
+                ? id
+                : null;
         }
     }
 }

@@ -11,4 +11,4 @@ SELECT
     ativo
 FROM servicos
 WHERE ativo = TRUE
-ORDER BY nome;
+ORDER BY nome ASC;

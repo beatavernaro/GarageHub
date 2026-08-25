@@ -4,11 +4,9 @@ namespace Domain.Entities;
 
 public class Usuario : BaseEntity
 {
-    public string Nome { get; private set; } = string.Empty;
-
-    public string Email { get; private set; } = string.Empty;
-
-    public string SenhaHash { get; private set; } = string.Empty;
+    public string Nome { get; private set; }
+    public string Email { get; private set; }
+    public string SenhaHash { get; private set; }
 
     public Usuario(
         string nome,

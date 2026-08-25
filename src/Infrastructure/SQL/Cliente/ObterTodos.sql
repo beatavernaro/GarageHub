@@ -19,4 +19,4 @@ SELECT
     ativo
 FROM clientes
 WHERE ativo = TRUE
-ORDER BY nome;
+ORDER BY nome ASC;

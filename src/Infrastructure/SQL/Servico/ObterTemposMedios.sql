@@ -28,4 +28,4 @@ GROUP BY
     s.codigo_interno,
     s.nome
 
-ORDER BY s.nome;
+ORDER BY s.nome ASC;

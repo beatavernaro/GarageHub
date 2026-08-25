@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using Api.Security;
 using Application.Interfaces;
 using GarageHub.Api.Middleware;
-using GarageHub.Api.Security;
 using Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -114,4 +114,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

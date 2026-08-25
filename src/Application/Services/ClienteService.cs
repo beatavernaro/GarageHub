@@ -13,10 +13,11 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
 {
     private readonly IClienteRepository _clienteRepository = clienteRepository;
     private readonly ICurrentUser _currentUser = currentUser;
+    private const string ClienteNaoEncontrado = "Cliente não encontrado.";
 
     public async Task<ClienteDto> ObterPorIdAsync(Guid id)
     {
-        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException("Cliente não encontrado.");
+        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException(ClienteNaoEncontrado);
         return MapearParaDto(cliente);
     }
 
@@ -29,7 +30,7 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
 
     public async Task<ClienteDto> ObterPorDocumentoAsync(string documento)
     {
-        var cliente = await _clienteRepository.ObterPorDocumentoAsync(documento) ?? throw new DomainException("Cliente não encontrado.");
+        var cliente = await _clienteRepository.ObterPorDocumentoAsync(documento) ?? throw new DomainException(ClienteNaoEncontrado);
         return MapearParaDto(cliente);
     }
 
@@ -58,7 +59,7 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
 
     public async Task AtualizarAsync(Guid id, AtualizarClienteDto dto)
     {
-        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException("Cliente não encontrado.");
+        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException(ClienteNaoEncontrado);
 
         var endereco = CriarEndereco(dto.Endereco);
 
@@ -75,7 +76,7 @@ public class ClienteService(IClienteRepository clienteRepository, ICurrentUser c
 
     public async Task InativarAsync(Guid id)
     {
-        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException("Cliente não encontrado.");
+        var cliente = await _clienteRepository.ObterPorIdAsync(id) ?? throw new DomainException(ClienteNaoEncontrado);
 
         cliente.Desativar(_currentUser.Id);
 

@@ -13,6 +13,7 @@ public class ItemEstoqueService(
 {
     private readonly IItemEstoqueRepository _itemEstoqueRepository = itemEstoqueRepository;
     private readonly ICurrentUser _currentUser = currentUser;
+    private const string ItemNaoEncontrado = "Item de estoque não encontrado.";
 
     public async Task<ItemEstoqueDto?> ObterPorIdAsync(Guid id)
     {
@@ -66,7 +67,7 @@ public class ItemEstoqueService(
     public async Task AtualizarAsync(Guid id, AtualizarItemEstoqueDto dto)
     {
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Item de estoque não encontrado.");
+            ?? throw new DomainException(ItemNaoEncontrado);
 
         var codigoInterno = NormalizarCodigo(dto.CodigoInterno);
 
@@ -92,7 +93,7 @@ public class ItemEstoqueService(
     public async Task AdicionarEstoqueAsync(Guid id, int quantidade)
     {
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Item de estoque não encontrado.");
+            ?? throw new DomainException(ItemNaoEncontrado);
 
         item.AdicionarEstoque(quantidade, _currentUser.Id);
 
@@ -102,7 +103,7 @@ public class ItemEstoqueService(
     public async Task RemoverEstoqueAsync(Guid id, int quantidade)
     {
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Item de estoque não encontrado.");
+            ?? throw new DomainException(ItemNaoEncontrado);
 
         item.RemoverEstoque(quantidade, _currentUser.Id);
 
@@ -112,7 +113,7 @@ public class ItemEstoqueService(
     public async Task AlterarPrecoAsync(Guid id, decimal novoPreco)
     {
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Item de estoque não encontrado.");
+            ?? throw new DomainException(ItemNaoEncontrado);
 
         item.AlterarPreco(novoPreco, _currentUser.Id);
 
@@ -122,7 +123,7 @@ public class ItemEstoqueService(
     public async Task InativarAsync(Guid id)
     {
         var item = await _itemEstoqueRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Item de estoque não encontrado.");
+            ?? throw new DomainException(ItemNaoEncontrado);
 
         item.Desativar(_currentUser.Id);
 

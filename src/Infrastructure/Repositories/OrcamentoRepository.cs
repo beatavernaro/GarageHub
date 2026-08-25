@@ -152,27 +152,24 @@ public class OrcamentoRepository(
                 _sqlFileReader.Get(
                     "Orcamento/InativarItem.sql");
 
-            foreach (var id in idsExistentes)
+            foreach (var id in idsExistentes.Where(id => !idsAtivos.Contains(id)))
             {
-                if (!idsAtivos.Contains(id))
-                {
-                    var item = orcamento.Itens
-                        .FirstOrDefault(x => x.Id == id);
+                var item = orcamento.Itens
+                    .FirstOrDefault(x => x.Id == id);
 
-                    await connection.ExecuteAsync(
-                        sqlInativar,
-                        new
-                        {
-                            Id = id,
-                            DataAlteracao =
-                                item?.DataAlteracao
-                                ?? orcamento.DataAlteracao,
-                            AlteradoPorId =
-                                item?.AlteradoPorId
-                                ?? orcamento.AlteradoPorId
-                        },
-                        transaction);
-                }
+                await connection.ExecuteAsync(
+                    sqlInativar,
+                    new
+                    {
+                        Id = id,
+                        DataAlteracao =
+                            item?.DataAlteracao
+                            ?? orcamento.DataAlteracao,
+                        AlteradoPorId =
+                            item?.AlteradoPorId
+                            ?? orcamento.AlteradoPorId
+                    },
+                    transaction);
             }
 
             var sqlAdicionar =

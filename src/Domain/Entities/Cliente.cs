@@ -7,11 +7,11 @@ namespace Domain.Entities;
 
 public class Cliente : BaseEntity
 {
-    public string Nome { get; private set; } = string.Empty;
-    public string Documento { get; private set; } = string.Empty;
+    public string Nome { get; private set; }
+    public string Documento { get; private set; }
     public TipoPessoa TipoPessoa { get; private set; }
-    public string Telefone { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
+    public string Telefone { get; private set; }
+    public string Email { get; private set; }
     public Endereco? Endereco { get; private set; }
 
     public void Normalizar()

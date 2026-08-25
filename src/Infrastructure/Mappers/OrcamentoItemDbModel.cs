@@ -1,3 +1,5 @@
+namespace Infrastructure.Mappers;
+
 public class OrcamentoItemDbModel
 {
     public Guid Id { get; init; }

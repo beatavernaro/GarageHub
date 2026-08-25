@@ -10,8 +10,8 @@ namespace Application.Services;
 public class ServicoService(IServicoRepository servicoRepository, ICurrentUser currentUser) : IServicoService
 {
     private readonly IServicoRepository _servicoRepository = servicoRepository;
-
     private readonly ICurrentUser _currentUser = currentUser;
+    private const string ServicoNaoEncontrado = "Serviço não encontrado.";
 
     public async Task<ServicoDto?> ObterPorIdAsync(Guid id)
     {
@@ -83,7 +83,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     {
         var servico =
             await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
+            ?? throw new DomainException(ServicoNaoEncontrado);
 
         var codigoInterno = dto.CodigoInterno.Trim().ToUpperInvariant();
 
@@ -107,7 +107,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     public async Task AlterarPrecoAsync(Guid id, decimal novoPreco)
     {
         var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
+            ?? throw new DomainException(ServicoNaoEncontrado);
 
         servico.AlterarPreco(novoPreco, _currentUser.Id);
 
@@ -117,7 +117,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     public async Task InativarAsync(Guid id)
     {
         var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
+            ?? throw new DomainException(ServicoNaoEncontrado);
 
         servico.Desativar(_currentUser.Id);
 
@@ -127,7 +127,7 @@ public class ServicoService(IServicoRepository servicoRepository, ICurrentUser c
     public async Task AtivarAsync(Guid id)
     {
         var servico = await _servicoRepository.ObterPorIdAsync(id)
-            ?? throw new DomainException("Serviço não encontrado.");
+            ?? throw new DomainException(ServicoNaoEncontrado);
 
         servico.Ativar(_currentUser.Id);
 

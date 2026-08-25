@@ -6,11 +6,9 @@ namespace Domain.Entities;
 
 public class Servico : BaseEntity
 {
-    public string CodigoInterno { get; private set; } = string.Empty;
-    public string Nome { get; private set; } = string.Empty;
-
+    public string CodigoInterno { get; private set; }
+    public string Nome { get; private set; }
     public string? Descricao { get; private set; }
-
     public decimal Preco { get; private set; }
 
     public void Normalizar()
@@ -40,8 +38,7 @@ public class Servico : BaseEntity
         Guid? usuarioId)
     {
         if (novoPreco <= 0)
-            throw new DomainException(
-                "O preço deve ser maior que zero.");
+            throw new DomainException("O preço deve ser maior que zero.");
 
         Preco = novoPreco;
         RegistrarAlteracao(usuarioId);

@@ -110,7 +110,7 @@ public class OrdemServicoService(
             .Select(x =>
                 new OrdemServicoServico(
                     ordemServicoId,
-                    x.ServicoId!.Value,
+                    x.ServicoId.GetValueOrDefault(),
                     x.NomeItem,
                     x.DescricaoItem,
                     x.Quantidade,
@@ -125,7 +125,7 @@ public class OrdemServicoService(
             .Select(x =>
                 new OrdemServicoItemEstoque(
                     ordemServicoId,
-                    x.ItemEstoqueId!.Value,
+                    x.ItemEstoqueId.GetValueOrDefault(),
                     x.NomeItem,
                     x.DescricaoItem,
                     x.Quantidade,

@@ -13,4 +13,4 @@ SELECT
     ativo
 FROM itens_estoque
 WHERE ativo = TRUE
-ORDER BY nome;
+ORDER BY nome ASC;
