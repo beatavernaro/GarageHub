@@ -10,7 +10,22 @@ on:
 jobs:
   build:
     name: Build and analyze
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: garagehub
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d garagehub"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -29,38 +44,29 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Cache SonarQube Cloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~\sonar\cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Cache SonarQube Cloud scanner
-        id: cache-sonar-scanner
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}\scanner
-          key: ${{ runner.os }}-sonar-scanner
-          restore-keys: ${{ runner.os }}-sonar-scanner
+      - name: Initialize database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d garagehub -f src/Infrastructure/Database/01-schema.sql
+          psql -h localhost -U postgres -d garagehub -f src/Infrastructure/Database/02-seed.sql
 
       - name: Install SonarQube Cloud scanner
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        shell: powershell
         run: |
-          New-Item -Path ${{ runner.temp }}\scanner -ItemType Directory -Force
-          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
+          dotnet tool install --global dotnet-sonarscanner
 
       - name: Begin SonarQube analysis
-        shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
-            /k:"beatavernaro_GarageHub" `
-            /o:"beatavernaro" `
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
-            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml" `
+          dotnet sonarscanner begin \
+            /k:"beatavernaro_GarageHub" \
+            /o:"beatavernaro" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml" \
             /d:sonar.coverage.exclusions="src/Api/**,src/Infrastructure/**,src/Application/DTOs/**,src/Application/Interfaces/**,src/Domain/Enums/**,src/Domain/Exceptions/**"
 
       - name: Restore
@@ -70,19 +76,17 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Run tests with coverage
-        shell: powershell
         run: |
-          dotnet test tests/Tests/Tests.csproj `
-            --no-build `
-            /p:CollectCoverage=true `
-            /p:CoverletOutputFormat=opencover `
-            /p:CoverletOutput=TestResults/coverage.opencover.xml `
+          dotnet test tests/Tests/Tests.csproj \
+            --no-build \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:Threshold=0
 
       - name: End SonarQube analysis
-        shell: powershell
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end `
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet sonarscanner end \
+            /d:sonar.token="${SONAR_TOKEN}"
