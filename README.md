@@ -19,19 +19,19 @@ O objetivo principal do projeto é oferecer uma base estruturada para o gerencia
 ## 📑Sumário
 
 - [Como executar o projeto](#como-executar-o-projeto)
-- [Autenticação e acesso à API](#autenticação-e-acesso-à-api)
-- [Funcionalidades e fluxos de negócio](#funcionalidades-e-fluxos-de-negócio)
+- [Autenticação e acesso à API](#autenticacao-e-acesso-a-api)
+- [Funcionalidades e fluxos de negócio](#funcionalidades-e-fluxos-de-negocio)
 - [Arquitetura e Domain-Driven Design](#arquitetura-e-domain-driven-design)
 - [Estrutura do projeto](#estrutura-do-projeto)
-- [Banco de dados e persistência](#banco-de-dados-e-persistência)
+- [Banco de dados e persistência](#banco-de-dados-e-persistencia)
 - [Tecnologias utilizadas](#tecnologias-utilizadas)
-- [API REST e documentação](#api-rest-e-documentação)
-- [Segurança e validações](#segurança-e-validações)
+- [API REST e documentação](#api-rest-e-documentacao)
+- [Segurança e validações](#seguranca-e-validacoes)
 - [Docker](#docker)
 - [Testes e cobertura](#testes-e-cobertura)
-- [Qualidade de código e SonarQube](#qualidade-de-código-e-sonarqube)
+- [Qualidade de código e SonarQube](#qualidade-de-codigo-e-sonarqube)
 - [CI com GitHub Actions](#ci-com-github-actions)
-- [Decisões técnicas, premissas e limitações do MVP](#decisões-técnicas-premissas-e-limitações-do-mvp)
+- [Decisões técnicas, premissas e limitações do MVP](#decisoes-tecnicas-premissas-e-limitacoes-do-mvp)
 - [Autora](#autora)
 
 ## Principais funcionalidades
