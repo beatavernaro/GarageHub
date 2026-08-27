@@ -408,7 +408,7 @@ Termos como `Orcamento`, `OrdemServico`, `Servico`, `ItemEstoque`, `Cliente` e `
 A modelagem completa do domínio, incluindo **Event Storming, agregados, eventos, comandos, políticas, diagramas e Linguagem Ubíqua**, está disponível na documentação DDD do projeto.
 
 **Documentação DDD:**  
-[INSERIR LINK DA DOCUMENTAÇÃO DDD]
+https://github.com/beatavernaro/GarageHub/tree/main/Documentacao/DDD
 
 ## 📁 Estrutura do projeto
 
