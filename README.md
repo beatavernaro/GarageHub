@@ -16,23 +16,29 @@ O sistema foi criado para centralizar e organizar processos que normalmente pode
 
 O objetivo principal do projeto é oferecer uma base estruturada para o gerenciamento do fluxo de atendimento da oficina, desde a identificação do cliente e do veículo até a aprovação do orçamento, geração da ordem de serviço, execução dos serviços e entrega do veículo.
 
+> ⚠️**Projeto exclusivamente acadêmico**⚠️
+>
+> As credenciais e senhas presentes neste repositório foram disponibilizadas exclusivamente para facilitar a execução e avaliação deste projeto acadêmico.
+>
+> Em um ambiente de produção, informações sensíveis **não devem ser armazenadas ou expostas diretamente no código-fonte ou no repositório**. Credenciais, senhas, chaves e outros secrets devem ser armazenados de forma segura, utilizando variáveis de ambiente ou serviços apropriados de gerenciamento de secrets.
+
 ## 📑Sumário
 
-- [Como executar o projeto](#como-executar-o-projeto)
-- [Autenticação e acesso à API](#autenticacao-e-acesso-a-api)
-- [Funcionalidades e fluxos de negócio](#funcionalidades-e-fluxos-de-negocio)
-- [Arquitetura e Domain-Driven Design](#arquitetura-e-domain-driven-design)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Banco de dados e persistência](#banco-de-dados-e-persistencia)
-- [Tecnologias utilizadas](#tecnologias-utilizadas)
-- [API REST e documentação](#api-rest-e-documentacao)
-- [Segurança e validações](#seguranca-e-validacoes)
-- [Docker](#docker)
-- [Testes e cobertura](#testes-e-cobertura)
-- [Qualidade de código e SonarQube](#qualidade-de-codigo-e-sonarqube)
-- [CI com GitHub Actions](#ci-com-github-actions)
-- [Decisões técnicas, premissas e limitações do MVP](#decisoes-tecnicas-premissas-e-limitacoes-do-mvp)
-- [Autora](#autora)
+- [Como executar o projeto](#-como-executar-o-projeto)
+- [Autenticação e acesso à API](#-autenticacao-e-acesso-a-api)
+- [Funcionalidades e fluxos de negócio](#-funcionalidades-e-fluxos-de-negocio)
+- [Arquitetura e Domain-Driven Design](#-arquitetura-e-domain-driven-design)
+- [Estrutura do projeto](#-estrutura-do-projeto)
+- [Banco de dados e persistência](#-banco-de-dados-e-persistencia)
+- [Tecnologias utilizadas](#-tecnologias-utilizadas)
+- [API REST e documentação](#-api-rest-e-documentacao)
+- [Segurança e validações](#-seguranca-e-validacoes)
+- [Docker](#-docker)
+- [Testes e cobertura](#-testes-e-cobertura)
+- [Qualidade de código e SonarQube](#-qualidade-de-codigo-e-sonarqube)
+- [CI com GitHub Actions](#-ci-com-github-actions)
+- [Decisões técnicas, premissas e limitações do MVP](#-decisoes-tecnicas-premissas-e-limitacoes-do-mvp)
+- [Autora](#-autora)
 
 ## Principais funcionalidades
 
