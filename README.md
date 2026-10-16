@@ -1,14 +1,15 @@
 # GarageHub
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![C#](https://img.shields.io/badge/C%23-13.0-239120?logo=csharp)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-326%20passing-brightgreen)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-kind-326CE5?logo=kubernetes&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-1.16-844FBA?logo=terraform&logoColor=white)
+[![CI/CD](https://github.com/beatavernaro/GarageHub/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/beatavernaro/GarageHub/actions/workflows/ci-cd.yml)
+![Tests](https://img.shields.io/badge/Tests-362%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/Coverage-96.7%25-brightgreen)
 ![Quality Gate](https://img.shields.io/badge/Quality%20Gate-Passed-brightgreen)
 ![Security](https://img.shields.io/badge/Security-A-brightgreen)
-
-GarageHub é um MVP de back-end para gestão de oficinas mecânicas, desenvolvido como parte do Tech Challenge da Pós Tech em Software Architecture da FIAP.
 
 GarageHub é um MVP de back-end para gestão de oficinas mecânicas, desenvolvido como parte do Tech Challenge da Pós Tech em Software Architecture da FIAP.
 
@@ -25,19 +26,24 @@ O objetivo principal do projeto é oferecer uma base estruturada para o gerencia
 ## 📑Sumário
 
 - [Como executar o projeto](#-como-executar-o-projeto)
-- [Autenticação e acesso à API](#-autenticacao-e-acesso-a-api)
-- [Funcionalidades e fluxos de negócio](#-funcionalidades-e-fluxos-de-negocio)
-- [Arquitetura e Domain-Driven Design](#-arquitetura-e-domain-driven-design)
+- [Autenticação e acesso à API](#-autenticação-e-acesso-à-api)
+- [Funcionalidades e fluxos de negócio](#-funcionalidades-e-fluxos-de-negócio)
+- [Arquitetura e Domain-Driven Design](#️-arquitetura-e-domain-driven-design)
 - [Estrutura do projeto](#-estrutura-do-projeto)
-- [Banco de dados e persistência](#-banco-de-dados-e-persistencia)
-- [Tecnologias utilizadas](#-tecnologias-utilizadas)
-- [API REST e documentação](#-api-rest-e-documentacao)
-- [Segurança e validações](#-seguranca-e-validacoes)
+- [Banco de dados e persistência](#️-banco-de-dados-e-persistência)
+- [Tecnologias utilizadas](#️-tecnologias-utilizadas)
+- [API REST e documentação](#-api-rest-e-documentação)
+- [Segurança e validações](#️-segurança-e-validações)
 - [Docker](#-docker)
+- [Arquitetura da infraestrutura](#-arquitetura-da-infraestrutura)
+- [Infraestrutura com Terraform](#-infraestrutura-com-terraform)
+- [Kubernetes](#-kubernetes)
+- [Escalabilidade automática (HPA)](#-escalabilidade-automática-hpa)
 - [Testes e cobertura](#-testes-e-cobertura)
-- [Qualidade de código e SonarQube](#-qualidade-de-codigo-e-sonarqube)
-- [CI com GitHub Actions](#-ci-com-github-actions)
-- [Decisões técnicas, premissas e limitações do MVP](#-decisoes-tecnicas-premissas-e-limitacoes-do-mvp)
+- [Qualidade de código e SonarQube](#-qualidade-de-código-e-sonarqube)
+- [CI/CD com GitHub Actions](#-cicd-com-github-actions)
+- [Solução de problemas](#-solução-de-problemas)
+- [Decisões técnicas, premissas e limitações do MVP](#-decisões-técnicas-premissas-e-limitações-do-mvp)
 - [Autora](#-autora)
 
 ## Principais funcionalidades
@@ -61,6 +67,10 @@ O objetivo principal do projeto é oferecer uma base estruturada para o gerencia
 - Documentação REST por meio de Swagger/OpenAPI
 - Testes unitários e de integração
 - Análise estática de código e segurança com SonarQube Cloud
+- Health checks de liveness e readiness
+- Execução em Kubernetes com escalabilidade automática (HPA)
+- Infraestrutura local provisionada com Terraform
+- Pipeline de CI/CD com publicação da imagem e deploy automatizado
 
 ## Objetivos técnicos
 
@@ -78,13 +88,33 @@ Além das funcionalidades de negócio, o projeto busca aplicar conceitos e prát
 - Integração contínua com GitHub Actions
 - Qualidade e segurança de código
 
+### Objetivos da Fase 2
+
+A Fase 2 evolui o MVP para um ambiente com orquestração, infraestrutura como código e entrega contínua:
+
+- Execução da API e do PostgreSQL em **Kubernetes**, com Deployment, StatefulSet, Services, ConfigMaps e Secrets;
+- **Escalabilidade automática** da API com HorizontalPodAutoscaler (HPA) baseado em CPU e memória;
+- Provisionamento do cluster Kubernetes local e da infraestrutura do banco de dados com **Terraform**;
+- Pipeline de **CI/CD** com build, testes, publicação da imagem Docker e deploy automatizado no Kubernetes;
+- Health checks para as probes de liveness e readiness do Kubernetes;
+- Gestão de secrets sem credenciais versionadas no repositório.
+
 ## 🚀 Como executar o projeto
 
-O GarageHub foi configurado para que todo o ambiente necessário seja inicializado utilizando Docker Compose. A aplicação e o banco de dados PostgreSQL são executados em containers, e os scripts de criação e carga inicial do banco são executados automaticamente.
+O GarageHub pode ser executado de duas formas:
 
-### Pré-requisitos
+| Ambiente | Indicado para | Endereço da API |
+| --- | --- | --- |
+| **Docker Compose** | Desenvolvimento local e execução rápida | `http://localhost:8080` |
+| **Kubernetes local** (kind + Terraform) | Demonstração da Fase 2: orquestração, HPA e deploy | `http://localhost:30080` |
 
-Para executar o projeto é necessário ter instalado:
+Os dois ambientes podem ser executados ao mesmo tempo, pois utilizam portas diferentes.
+
+### Opção 1: Docker Compose
+
+A aplicação e o banco de dados PostgreSQL são executados em containers, e os scripts de criação e carga inicial do banco são executados automaticamente.
+
+#### Pré-requisitos
 
 - Git
 - Docker
@@ -92,21 +122,24 @@ Para executar o projeto é necessário ter instalado:
 
 Não é necessário instalar localmente o .NET ou o PostgreSQL para executar a aplicação utilizando Docker.
 
-### 1. Clonar o repositório
+#### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/beatavernaro/GarageHub.git
-```
-
-Acesse a pasta do projeto:
-
-```bash
 cd GarageHub
 ```
 
-### 2. Subir o ambiente
+#### 2. Configurar as variáveis de ambiente (opcional)
 
-Execute:
+O `docker-compose.yml` lê a senha do banco e a chave JWT de um arquivo `.env`, que não é versionado. Sem esse arquivo, são utilizados valores padrão de desenvolvimento e o ambiente sobe sem nenhuma configuração adicional.
+
+Para definir valores próprios:
+
+```bash
+cp .env.example .env
+```
+
+#### 3. Subir o ambiente
 
 ```bash
 docker compose up --build
@@ -119,25 +152,59 @@ O Docker Compose será responsável por:
 - Criar o banco de dados;
 - Executar os scripts de criação das tabelas;
 - Executar os dados iniciais (seed);
-- Iniciar a API;
+- Aguardar o banco ficar pronto (healthcheck) antes de iniciar a API;
 - Configurar a comunicação entre a API e o banco de dados.
 
-Após a inicialização, o ambiente estará pronto para utilização sem necessidade de configurações adicionais.
-
-### 3. Acessar a API
-
-A documentação Swagger/OpenAPI pode ser acessada em:
+#### 4. Acessar a API
 
 ```text
-http://localhost:8080/swagger
+Swagger:    http://localhost:8080/swagger
+Liveness:   http://localhost:8080/health/live
+Readiness:  http://localhost:8080/health/ready
 ```
 
-### 4. Encerrar o ambiente
+#### 5. Encerrar o ambiente
 
-Para interromper os containers e remover também os volumes, incluindo os dados armazenados pelo PostgreSQL:
+Para interromper os containers mantendo os dados do PostgreSQL:
+
+```bash
+docker compose down
+```
+
+Para remover também os volumes, incluindo os dados armazenados:
 
 ```bash
 docker compose down -v
+```
+
+### Opção 2: Kubernetes local
+
+Execute no terminal do WSL (ou em Linux/macOS), a partir da raiz do repositório. Os pré-requisitos e cada etapa estão detalhados em [Infraestrutura com Terraform](#-infraestrutura-com-terraform) e [Kubernetes](#-kubernetes).
+
+```bash
+# 1. Provisionar o cluster kind e a infraestrutura do banco
+terraform -chdir=infra init
+terraform -chdir=infra apply
+
+# 2. Criar o arquivo de secrets (não versionado) e definir valores próprios
+cp k8s/secrets.env.example k8s/secrets.env
+
+# 3. Build da imagem e deploy da API e do PostgreSQL
+bash scripts/deploy-local.sh
+
+# 4. Verificar a aplicação
+bash scripts/smoke-test.sh
+
+# 5. (Opcional) Demonstrar o escalonamento automático
+bash scripts/load-test.sh
+```
+
+A API fica disponível em `http://localhost:30080/swagger`.
+
+Para remover todo o ambiente:
+
+```bash
+terraform -chdir=infra destroy
 ```
 
 ## 🔐 Autenticação e acesso à API
@@ -441,6 +508,15 @@ A estrutura principal do GarageHub é:
 
 ```text
 GarageHub/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml        # Build, testes, imagem (GHCR) e deploy no Kubernetes
+│       └── sonar.yml        # Testes com cobertura e análise no SonarQube Cloud
+│
+├── infra/                   # Terraform: cluster kind, metrics-server e infraestrutura do banco
+├── k8s/                     # Manifestos Kubernetes (kustomize)
+├── scripts/                 # Deploy local, smoke test e teste de carga
+│
 ├── src/
 │   ├── Api/
 │   ├── Application/
@@ -452,8 +528,11 @@ GarageHub/
 │
 ├── Dockerfile
 ├── docker-compose.yml
+├── .env.example
 └── README.md
 ```
+
+Os diretórios `infra/`, `k8s/` e `scripts/` são descritos em [Infraestrutura com Terraform](#-infraestrutura-com-terraform), [Kubernetes](#-kubernetes) e [Escalabilidade automática (HPA)](#-escalabilidade-automática-hpa).
 
 ### `src/Domain`
 
@@ -553,6 +632,54 @@ Infrastructure → Application / Domain
 
 A camada de domínio permanece no centro da solução, enquanto detalhes como HTTP, PostgreSQL, Dapper e autenticação são tratados nas camadas externas.
 
+### Diagrama de componentes
+
+```mermaid
+flowchart LR
+    cliente["Cliente HTTP<br/>(Swagger, Postman, curl)"]
+
+    subgraph api["Api"]
+        ctrl["Controllers"]
+        mw["Middleware de exceções"]
+        jwt["Autenticação JWT"]
+        hc["Health checks<br/>/health/live · /health/ready"]
+    end
+
+    subgraph app["Application"]
+        svc["Application Services"]
+        contratos["Interfaces<br/>repositórios · Unit of Work · segurança"]
+        dtos["DTOs"]
+    end
+
+    subgraph dom["Domain"]
+        ent["Entidades e Value Objects"]
+        val["Validadores e regras de negócio"]
+    end
+
+    subgraph infra["Infrastructure"]
+        repo["Repositórios (Dapper)"]
+        sql["Consultas SQL"]
+        uow["DbSession (Unit of Work)"]
+        seg["JWT e BCrypt"]
+    end
+
+    db[("PostgreSQL")]
+
+    cliente --> ctrl
+    cliente --> hc
+    ctrl --> svc
+    svc --> dtos
+    svc --> ent
+    ent --> val
+    svc --> contratos
+    repo -. implementa .-> contratos
+    seg -. implementa .-> contratos
+    repo --> sql
+    repo --> uow
+    uow --> db
+    hc --> db
+```
+
 ## 🗄️ Banco de dados e persistência
 
 O GarageHub utiliza **PostgreSQL** como banco de dados relacional e **Dapper** para realizar o acesso e a persistência dos dados.
@@ -647,7 +774,15 @@ O `01-schema.sql` é responsável pela criação da estrutura necessária para a
 
 O `02-seed.sql` adiciona os dados iniciais necessários para utilização do ambiente de desenvolvimento, incluindo os usuários utilizados para autenticação.
 
-Quando o ambiente é iniciado através do Docker Compose, esses scripts são executados automaticamente durante a inicialização do PostgreSQL.
+Os mesmos scripts são utilizados em todos os ambientes, sem cópias:
+
+| Ambiente | Como os scripts são executados |
+| --- | --- |
+| Docker Compose | Diretório montado em `/docker-entrypoint-initdb.d` do PostgreSQL |
+| Kubernetes | Publicados pelo Terraform no ConfigMap `garagehub-db-init`, montado em `/docker-entrypoint-initdb.d` |
+| CI/CD | Aplicados com `psql` no banco usado pelos testes de integração |
+
+No Docker Compose e no Kubernetes, os scripts só são executados quando o volume de dados do PostgreSQL está vazio. Para recriar o banco do zero, veja [Solução de problemas](#-solução-de-problemas).
 
 Isso permite que um novo ambiente seja criado de maneira reproduzível sem necessidade de criação manual das tabelas ou inserção manual dos dados iniciais.
 
@@ -697,10 +832,18 @@ O GarageHub foi desenvolvido utilizando tecnologias voltadas ao ecossistema .NET
 
 O projeto possui testes unitários e de integração, com cobertura superior ao requisito mínimo de **80% dos domínios críticos**.
 
-### Containers
+### Containers e orquestração
 
 - **Docker** — utilizado para criar uma imagem reproduzível da aplicação.
 - **Docker Compose** — responsável por orquestrar a API e o PostgreSQL, permitindo inicializar todo o ambiente com um único comando.
+- **Kubernetes** — orquestração da API e do PostgreSQL, com escalabilidade automática da API.
+- **kind (Kubernetes in Docker)** — cluster Kubernetes local executado em containers Docker.
+- **Kustomize** (embutido no `kubectl`) — composição dos manifestos e geração do Secret a partir de um arquivo não versionado.
+- **metrics-server** — coleta as métricas de CPU e memória utilizadas pelo HPA.
+
+### Infraestrutura como código
+
+- **Terraform** — provisionamento do cluster kind, do metrics-server (via Helm) e da infraestrutura do banco de dados.
 
 ### Qualidade e análise estática
 
@@ -708,11 +851,12 @@ O projeto possui testes unitários e de integração, com cobertura superior ao 
 
 A análise final do projeto apresentou **Quality Gate aprovado**, classificação **A em Security, Reliability e Maintainability** e **96,7% de cobertura de código**.
 
-### Integração contínua
+### CI/CD
 
-- **GitHub Actions** — utilizado para automatizar o processo de build, execução dos testes, geração da cobertura e análise pelo SonarQube Cloud.
+- **GitHub Actions** — automatiza build, testes, cobertura, análise pelo SonarQube Cloud, publicação da imagem Docker e deploy em Kubernetes.
+- **GitHub Container Registry (GHCR)** — registro da imagem Docker da API.
 
-O pipeline executado no GitHub realiza a validação automática do projeto a cada alteração configurada no workflow, permitindo verificar continuamente se o código continua compilando, se os testes permanecem válidos e se os critérios de qualidade estabelecidos continuam sendo atendidos.
+Os pipelines executados no GitHub validam o projeto a cada alteração: verificam se o código compila, se os testes permanecem válidos, se os critérios de qualidade continuam sendo atendidos e se a aplicação funciona implantada em Kubernetes.
 
 ### Resumo da stack
 
@@ -730,8 +874,11 @@ O pipeline executado no GitHub realiza a validação automática do projeto a ca
 | Testes de integração | Microsoft.AspNetCore.Mvc.Testing |
 | Cobertura | Coverlet |
 | Containers | Docker, Docker Compose |
+| Orquestração | Kubernetes (kind), Kustomize, metrics-server |
+| Infraestrutura como código | Terraform |
+| Registro de imagens | GitHub Container Registry (GHCR) |
 | Qualidade | SonarQube Cloud |
-| CI | GitHub Actions |
+| CI/CD | GitHub Actions |
 
 ## 🌐 API REST e documentação
 
@@ -927,6 +1074,27 @@ A API possui um middleware responsável por centralizar o tratamento das exceç�
 
 Com isso, erros de domínio e erros inesperados podem ser tratados de maneira padronizada, evitando a duplicação de tratamento em cada controller e reduzindo a exposição desnecessária de detalhes internos da aplicação.
 
+### Gestão de secrets
+
+Nenhuma credencial dos ambientes Kubernetes e CI/CD é versionada no repositório:
+
+| Ambiente | Origem dos secrets |
+| --- | --- |
+| Docker Compose | Arquivo `.env` (ignorado pelo Git). Sem ele, são usados valores padrão de desenvolvimento |
+| Kubernetes local | Arquivo `k8s/secrets.env` (ignorado pelo Git), convertido no Secret `garagehub-secrets` pelo `secretGenerator` do kustomize |
+| CI/CD | GitHub Secrets `POSTGRES_PASSWORD` e `JWT_KEY`, mascarados automaticamente nos logs |
+
+Os modelos `.env.example` e `k8s/secrets.env.example` contêm apenas valores fictícios. O state do Terraform e o kubeconfig também são ignorados pelo Git, pois contêm credenciais de acesso ao cluster.
+
+No Kubernetes:
+
+- A connection string é montada a partir do Secret, para que a senha do banco exista em um único lugar;
+- A API é executada no ambiente `Production`, que não possui connection string padrão: se a configuração estiver ausente, a aplicação falha na inicialização em vez de utilizar credenciais de desenvolvimento;
+- O container é executado com usuário não privilegiado (`runAsNonRoot`, UID 1654) e sem escalonamento de privilégios;
+- O PostgreSQL não é exposto fora do cluster.
+
+> Secrets do Kubernetes são apenas codificados em base64, e não criptografados. Em produção, seria recomendável habilitar a criptografia em repouso do etcd ou utilizar um gerenciador de secrets externo.
+
 ### Análise de segurança
 
 O código também é submetido à análise estática utilizando **SonarQube Cloud**.
@@ -939,9 +1107,7 @@ Em um ambiente produtivo, secrets, senhas, chaves JWT e strings de conexão seri
 
 ## 🐳 Docker
 
-O GarageHub utiliza **Docker** para fornecer um ambiente reproduzível e simplificar a execução local da aplicação.
-
-Toda a infraestrutura necessária para executar o MVP pode ser inicializada através do Docker Compose, sem necessidade de instalação local do PostgreSQL ou do .NET.
+O GarageHub utiliza **Docker** para fornecer um ambiente reproduzível e simplificar a execução local da aplicação. A mesma imagem é utilizada pelo Docker Compose, pelo cluster Kubernetes local e pelo pipeline de CI/CD.
 
 ### Dockerfile
 
@@ -951,27 +1117,28 @@ A construção utiliza múltiplos estágios, separando o ambiente utilizado para
 
 De forma geral, o processo realiza:
 
-1. Restauração das dependências;
-2. Compilação e publicação da aplicação;
-3. Criação da imagem final utilizando o runtime do ASP.NET Core;
-4. Configuração do diretório da aplicação;
-5. Inicialização da API.
+1. Cópia apenas dos arquivos de projeto (`.csproj`) e restauração das dependências da API. Essa camada é reaproveitada do cache enquanto as dependências não mudam;
+2. Cópia do código-fonte, compilação e publicação da aplicação;
+3. Criação da imagem final utilizando apenas o runtime do ASP.NET Core;
+4. Execução da API na porta 8080 com usuário não privilegiado.
 
-Como melhoria de segurança identificada durante a análise do SonarQube Cloud, a aplicação no container final é executada utilizando um **usuário não privilegiado**, evitando a execução da API como `root`.
+Como melhoria de segurança identificada durante a análise do SonarQube Cloud, a aplicação no container final é executada utilizando um **usuário não privilegiado**, evitando a execução da API como `root`. O usuário é referenciado pelo UID numérico (`$APP_UID`), o que permite ao Kubernetes validar a política `runAsNonRoot`.
+
+O `.dockerignore` mantém fora da imagem os testes, a documentação, os manifestos e scripts de infraestrutura e os arquivos `.env`.
 
 ### Docker Compose
 
-O `docker-compose.yml` é responsável pela orquestração do ambiente completo.
-
-Ele inicializa os serviços necessários para execução do projeto e configura a comunicação entre eles.
+O `docker-compose.yml` é responsável pela orquestração do ambiente de desenvolvimento.
 
 O ambiente contém:
 
 - Container da API GarageHub;
-- Container PostgreSQL;
+- Container PostgreSQL, com healthcheck (`pg_isready`);
 - Rede utilizada para comunicação entre os serviços;
 - Volume para persistência dos dados;
 - Configurações necessárias para conexão da API com o banco.
+
+A API só é iniciada depois que o PostgreSQL está pronto para receber conexões. A senha do banco e a chave JWT são lidas do arquivo `.env`, com valores padrão de desenvolvimento quando ele não existe.
 
 ### Inicialização do banco
 
@@ -984,27 +1151,11 @@ Durante a primeira criação do container PostgreSQL, os scripts versionados no 
 
 O primeiro cria a estrutura do banco e o segundo adiciona os dados iniciais necessários para utilização da aplicação.
 
-Isso permite iniciar um ambiente novo através de:
-
-```bash
-docker compose up --build
-```
-
-sem necessidade de executar scripts manualmente.
-
 ### Persistência
 
 O PostgreSQL utiliza volume Docker para que os dados sejam preservados mesmo quando os containers forem interrompidos.
 
-O comando:
-
-```bash
-docker compose down
-```
-
-remove os containers, mas mantém os dados persistidos.
-
-Para recriar completamente o ambiente, incluindo o banco:
+O comando `docker compose down` remove os containers, mas mantém os dados persistidos. Para recriar completamente o ambiente, incluindo o banco:
 
 ```bash
 docker compose down -v
@@ -1012,6 +1163,302 @@ docker compose up --build
 ```
 
 O uso de `-v` remove os volumes e, consequentemente, os dados armazenados anteriormente.
+
+## 🧭 Arquitetura da infraestrutura
+
+A infraestrutura da Fase 2 é dividida em duas camadas com responsabilidades separadas:
+
+- **Terraform (`infra/`)** provisiona a plataforma: o cluster Kubernetes, o metrics-server e a infraestrutura do banco de dados;
+- **Manifestos (`k8s/`)** descrevem as cargas de trabalho: a API, o PostgreSQL, seus Services, configurações, secrets e o escalonamento automático.
+
+### Diagrama da infraestrutura provisionada
+
+```mermaid
+flowchart TB
+    cliente["Cliente HTTP<br/>localhost:30080"]
+
+    subgraph host["Host com Docker (WSL 2 local ou runner do GitHub Actions)"]
+        subgraph kind["Cluster kind 'garagehub' (Terraform) · 1 control-plane + 1 worker"]
+            subgraph kube["Namespace kube-system"]
+                ms["metrics-server<br/>(Helm · Terraform)"]
+            end
+
+            subgraph ns["Namespace garagehub (Terraform)"]
+                svcapi["Service garagehub-api<br/>NodePort 30080"]
+                hpa["HPA garagehub-api<br/>CPU 60% · memória 80% · 1 a 5 réplicas"]
+                dep["Deployment garagehub-api<br/>pods da API (.NET 10)"]
+                cm["ConfigMap<br/>garagehub-config"]
+                sec["Secret<br/>garagehub-secrets"]
+                svcdb["Service garagehub-db<br/>headless · 5432"]
+                sts["StatefulSet garagehub-db<br/>postgres:18"]
+                init["ConfigMap garagehub-db-init<br/>01-schema.sql · 02-seed.sql<br/>(Terraform)"]
+                pvc[("PVC data-garagehub-db-0<br/>1 Gi · StorageClass garagehub-db<br/>(Terraform)")]
+            end
+        end
+    end
+
+    cliente --> svcapi
+    svcapi --> dep
+    dep --> svcdb
+    svcdb --> sts
+    sts --> pvc
+    init --> sts
+    cm --> dep
+    sec --> dep
+    sec --> sts
+    ms -. métricas .-> hpa
+    hpa -. escala .-> dep
+```
+
+Os recursos marcados com **(Terraform)** são criados por `infra/`. Os demais são criados pelos manifestos de `k8s/`.
+
+### Fluxo de uma requisição
+
+1. O cliente acessa `http://localhost:30080`. A porta é publicada no host pelo nó do kind e, no Windows, encaminhada pelo WSL 2.
+2. O Service `garagehub-api` (NodePort) distribui a requisição entre os pods prontos da API.
+3. A API acessa o PostgreSQL pelo Service headless `garagehub-db`.
+4. Os dados ficam no volume persistente do StatefulSet, que sobrevive à recriação do pod do banco.
+5. O HPA consulta as métricas do metrics-server e ajusta o número de réplicas da API conforme a carga.
+
+## 🧱 Infraestrutura com Terraform
+
+O diretório `infra/` provisiona um cluster Kubernetes local com **kind** (Kubernetes in Docker), em que cada nó do cluster é um container Docker. A solução é gratuita, executa inteiramente na máquina local e é a mesma utilizada pelo pipeline de CI/CD, que cria um cluster idêntico no runner do GitHub Actions.
+
+### Recursos provisionados
+
+| Recurso | Arquivo | Descrição |
+| --- | --- | --- |
+| `kind_cluster.this` | `cluster.tf` | Cluster `garagehub` com 1 nó control-plane e 1 worker (Kubernetes v1.35). Publica o NodePort 30080 no host |
+| `helm_release.metrics_server` | `metrics-server.tf` | metrics-server (chart 3.14.0), que fornece as métricas de CPU e memória para o HPA |
+| `kubernetes_namespace_v1.garagehub` | `database.tf` | Namespace da aplicação e do banco de dados |
+| `kubernetes_storage_class_v1.database` | `database.tf` | StorageClass `garagehub-db` para o volume do PostgreSQL, com política `Retain` |
+| `kubernetes_config_map_v1.database_init` | `database.tf` | ConfigMap `garagehub-db-init` com os scripts `01-schema.sql` e `02-seed.sql`, lidos diretamente de `src/Infrastructure/Database/` |
+
+Providers utilizados: `tehcyx/kind` 0.11, `hashicorp/kubernetes` 3.3 e `hashicorp/helm` 3.3, com versões registradas no `.terraform.lock.hcl`.
+
+### Variáveis
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `cluster_name` | `garagehub` | Nome do cluster. O contexto do kubectl será `kind-<cluster_name>` |
+| `node_image` | `kindest/node:v1.35.0` (fixada por digest) | Imagem dos nós (versão do Kubernetes) |
+| `worker_count` | `1` | Quantidade de nós worker |
+| `api_node_port` | `30080` | Porta da API publicada no host |
+| `namespace` | `garagehub` | Namespace da aplicação |
+| `metrics_server_chart_version` | `3.14.0` | Versão do chart do metrics-server |
+
+Nenhuma variável é obrigatória. Para alterar os valores, copie `infra/terraform.tfvars.example` para `infra/terraform.tfvars`.
+
+### Pré-requisitos
+
+O ambiente de referência é **Windows com WSL 2 (Ubuntu)** e Docker Engine instalado no WSL. Os mesmos comandos funcionam em Linux e macOS com Docker.
+
+| Ferramenta | Versão utilizada | Uso |
+| --- | --- | --- |
+| Docker | 29 | Execução dos nós do cluster e build da imagem |
+| Terraform | 1.16 | Provisionamento da infraestrutura |
+| kubectl | 1.37 | Aplicação dos manifestos e operação do cluster |
+| kind | 0.33 | Carga da imagem local no cluster (`kind load`) |
+
+Instalação no WSL sem permissão de administrador, em `~/.local/bin`, com verificação dos checksums oficiais:
+
+```bash
+mkdir -p ~/.local/bin && cd "$(mktemp -d)"
+
+# kubectl
+curl -fsSLO "https://dl.k8s.io/release/v1.37.1/bin/linux/amd64/kubectl"
+curl -fsSLO "https://dl.k8s.io/release/v1.37.1/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum -c -
+
+# kind
+curl -fsSLo kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64"
+curl -fsSLo kind.sha256 "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64.sha256sum"
+echo "$(awk '{print $1}' kind.sha256)  kind" | sha256sum -c -
+
+# Terraform
+curl -fsSLO "https://releases.hashicorp.com/terraform/1.16.6/terraform_1.16.6_linux_amd64.zip"
+curl -fsSLO "https://releases.hashicorp.com/terraform/1.16.6/terraform_1.16.6_SHA256SUMS"
+grep linux_amd64.zip terraform_1.16.6_SHA256SUMS | sha256sum -c -
+python3 -m zipfile -e terraform_1.16.6_linux_amd64.zip .
+
+install -m 0755 kubectl kind terraform ~/.local/bin/
+```
+
+Abra um novo terminal para que `~/.local/bin` seja incluído no `PATH` e confira com `terraform -version`, `kubectl version --client` e `kind version`.
+
+### Comandos
+
+Execute a partir da raiz do repositório:
+
+```bash
+terraform -chdir=infra init       # baixa os providers
+terraform -chdir=infra plan       # mostra os 5 recursos que serão criados
+terraform -chdir=infra apply      # cria o cluster e os recursos (cerca de 2 minutos)
+terraform -chdir=infra output     # contexto do kubectl, namespace, URL da API
+terraform -chdir=infra destroy    # remove o cluster e todos os recursos
+```
+
+Após o `apply`, o contexto `kind-garagehub` é adicionado ao `~/.kube/config` e passa a ser o contexto atual do `kubectl`:
+
+```bash
+kubectl get nodes                                    # 2 nós Ready
+kubectl top nodes                                    # metrics-server em funcionamento
+kubectl get storageclass garagehub-db
+kubectl -n garagehub get configmap garagehub-db-init
+```
+
+O state do Terraform (`terraform.tfstate`) é mantido localmente e é ignorado pelo Git. Quando os scripts SQL forem alterados, execute `terraform -chdir=infra apply` novamente para atualizar o ConfigMap.
+
+> **Versão do Kubernetes:** o provider `tehcyx/kind` 0.11 utiliza internamente a biblioteca do kind v0.31.0, que não inicializa nós com Kubernetes 1.37. Por isso, a variável `node_image` utiliza a imagem oficial dessa versão do kind (Kubernetes v1.35.0).
+
+## 🚢 Kubernetes
+
+Os manifestos ficam em `k8s/` e são aplicados com **kustomize**, embutido no `kubectl`:
+
+```bash
+kubectl apply -k k8s/
+```
+
+### Manifestos
+
+| Arquivo | Recurso | Responsabilidade |
+| --- | --- | --- |
+| `kustomization.yaml` | — | Ponto de entrada: namespace, lista de recursos, geração do Secret e tag da imagem |
+| `configmap.yaml` | ConfigMap `garagehub-config` | Configurações não sensíveis: ambiente, emissor e audiência do JWT, host, porta e nome do banco |
+| `secrets.env.example` | Secret `garagehub-secrets` | Modelo do `secrets.env` (não versionado), convertido em Secret pelo `secretGenerator` |
+| `postgres-statefulset.yaml` | StatefulSet `garagehub-db` | PostgreSQL 18 com volume persistente de 1 Gi e scripts de inicialização |
+| `postgres-service.yaml` | Service `garagehub-db` (headless) | DNS estável do banco, acessível apenas dentro do cluster |
+| `api-deployment.yaml` | Deployment `garagehub-api` | Pods da API, com probes, requests e limits |
+| `api-service.yaml` | Service `garagehub-api` (NodePort 30080) | Exposição da API fora do cluster |
+| `api-hpa.yaml` | HorizontalPodAutoscaler `garagehub-api` | Escalonamento automático da API de 1 a 5 réplicas |
+
+Os manifestos dependem dos recursos criados pelo Terraform: namespace `garagehub`, StorageClass `garagehub-db` e ConfigMap `garagehub-db-init`.
+
+O nome do Secret gerado recebe um sufixo de hash (por exemplo, `garagehub-secrets-78cm6g72hc`). Quando os valores mudam, o nome muda e os pods são recriados automaticamente com a nova configuração.
+
+### Configuração da API no cluster
+
+| Item | Configuração |
+| --- | --- |
+| Recursos | Requests de 100m de CPU e 256Mi de memória. Limits de 500m de CPU e 512Mi de memória |
+| Readiness probe | `GET /health/ready`: verifica o acesso ao banco. Enquanto falha, o pod não recebe tráfego |
+| Liveness probe | `GET /health/live`: não consulta o banco, para que uma indisponibilidade do PostgreSQL não provoque reinícios em cascata |
+| Timeout das probes | 3 segundos, para que respostas mais lentas durante picos de CPU não tirem pods do Service |
+| Atualização | Rolling update com `maxUnavailable: 0`: o novo pod fica pronto antes de o antigo ser removido |
+| Segurança | `runAsNonRoot` e `allowPrivilegeEscalation: false` |
+| Réplicas | Não definidas no Deployment, pois são controladas pelo HPA |
+
+### Deploy local
+
+Pré-requisito: cluster provisionado com `terraform -chdir=infra apply`.
+
+**1. Criar o arquivo de secrets** a partir do modelo e definir valores próprios:
+
+```bash
+cp k8s/secrets.env.example k8s/secrets.env
+```
+
+Para gerar valores aleatórios:
+
+```bash
+openssl rand -hex 24   # POSTGRES_PASSWORD
+openssl rand -hex 32   # JWT_KEY (mínimo de 32 caracteres)
+```
+
+**2. Executar o deploy:**
+
+```bash
+bash scripts/deploy-local.sh
+```
+
+O script verifica os pré-requisitos, constrói a imagem `garagehub-api:local`, carrega a imagem nos nós do kind, aplica os manifestos com `kubectl apply -k k8s/` e aguarda o PostgreSQL e a API ficarem prontos. Em um novo deploy, os pods da API são reiniciados para utilizar a imagem atualizada.
+
+**3. Verificar a aplicação:**
+
+```bash
+kubectl -n garagehub get pods,services,hpa
+bash scripts/smoke-test.sh
+```
+
+O smoke test verifica os health checks, o Swagger, o bloqueio de requisições sem token, o login e dois endpoints protegidos.
+
+A API fica disponível em `http://localhost:30080/swagger`, com o mesmo usuário administrador do ambiente Docker Compose.
+
+### Comandos úteis
+
+```bash
+kubectl -n garagehub logs -l app.kubernetes.io/name=garagehub-api -f    # logs da API
+kubectl -n garagehub top pods                                            # consumo de CPU e memória
+kubectl -n garagehub rollout restart deployment/garagehub-api            # reinicia a API
+kubectl -n garagehub exec -it garagehub-db-0 -- psql -U postgres -d garagehub
+```
+
+### Resiliência
+
+Comportamentos verificados no cluster local:
+
+- **Persistência:** ao remover o pod do PostgreSQL, o StatefulSet o recria com o mesmo volume e os dados permanecem disponíveis.
+- **Banco indisponível:** a readiness probe retira a API do Service sem reiniciá-la, e a API volta a receber tráfego automaticamente quando o banco retorna.
+
+## 📈 Escalabilidade automática (HPA)
+
+O HorizontalPodAutoscaler ajusta o número de réplicas da API de acordo com o uso de CPU e memória, medido pelo metrics-server.
+
+| Parâmetro | Valor |
+| --- | --- |
+| Réplicas | Mínimo 1, máximo 5 |
+| Meta de CPU | 60% do request (100m) |
+| Meta de memória | 80% do request (256Mi) |
+| Aumento | Imediato, podendo dobrar o número de réplicas a cada 15 segundos |
+| Redução | Após 60 segundos abaixo das metas, uma réplica a cada 30 segundos |
+
+A janela de estabilização da redução foi diminuída do padrão do Kubernetes (300 segundos) para 60 segundos, para facilitar a demonstração.
+
+### Demonstração
+
+```bash
+bash scripts/load-test.sh
+```
+
+O script cria um pod temporário no cluster que faz requisições paralelas para `POST /api/Auth/login`. O login valida a senha com BCrypt, uma operação intensiva em CPU, o que eleva rapidamente o uso de CPU dos pods. A cada 15 segundos, o script exibe o estado do HPA e o consumo dos pods e, ao final, os eventos de escalonamento.
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `DURATION` | `180` | Duração da carga, em segundos |
+| `WORKERS` | `10` | Requisições simultâneas |
+| `SCALE_DOWN_WAIT` | `240` | Tempo acompanhando a redução após a carga (0 para não acompanhar) |
+| `INTERVAL` | `15` | Intervalo entre as leituras, em segundos |
+
+Exemplo: `DURATION=300 WORKERS=20 bash scripts/load-test.sh`. Para acompanhar em outro terminal: `kubectl -n garagehub get hpa -w`.
+
+### Resultado obtido
+
+Execução no cluster local com os parâmetros padrão:
+
+| Momento | CPU (meta 60%) | Memória (meta 80%) | Réplicas |
+| --- | --- | --- | --- |
+| Antes da carga | 2% | 20% | 1 |
+| 30 s de carga | 460% | 21% | 1 → 2 |
+| 45 a 75 s de carga | 499% → 86% | 15% | 4 → 5 |
+| Fim da carga (180 s) | 365% | 21% | 5 |
+| 90 s após a carga | 4% | 21% | 4 |
+| 180 s após a carga | 3% | 24% | 1 |
+
+Eventos registrados pelo HPA:
+
+```text
+New size: 2; reason: cpu resource utilization (percentage of request) above target
+New size: 4; reason: cpu resource utilization (percentage of request) above target
+New size: 5; reason: cpu resource utilization (percentage of request) above target
+New size: 4; reason: All metrics below target
+New size: 3; reason: All metrics below target
+New size: 2; reason: All metrics below target
+New size: 1; reason: All metrics below target
+```
+
+Durante a carga, nenhum pod foi reiniciado e as probes não falharam.
+
+Nesta aplicação, o consumo de memória permanece estável sob carga (entre 15% e 24% do request), portanto o gatilho observado é a CPU. A meta de memória protege contra cenários de crescimento de memória. A API utiliza o GC de workstation (`DOTNET_gcServer=0`), que retém menos memória por pod e permite que as réplicas sejam reduzidas após a carga.
 
 ## 🧪 Testes e cobertura
 
@@ -1057,6 +1504,7 @@ Entre os fluxos cobertos estão:
 - Criação e consulta de orçamentos;
 - Aprovação de orçamento;
 - Geração automática da Ordem de Serviço;
+- Health checks de liveness e readiness;
 - Integração entre API, Application, Domain, Infrastructure e PostgreSQL.
 
 Dessa forma, os testes de integração complementam os testes unitários verificando se os componentes funcionam corretamente quando utilizados em conjunto.
@@ -1159,66 +1607,133 @@ Após as correções e análises realizadas, o projeto obteve:
 
 O **Quality Gate aprovado** indica que os critérios de qualidade configurados para o projeto foram atendidos após a análise do código.
 
-## ⚙️ CI com GitHub Actions
+## 🔄 CI/CD com GitHub Actions
 
-O GarageHub utiliza **GitHub Actions** para automatizar a validação do projeto e a integração com o SonarQube Cloud.
+O projeto possui dois workflows:
 
-O workflow é executado automaticamente para alterações na branch principal e nos eventos de Pull Request configurados no repositório.
+| Workflow | Arquivo | Gatilhos | Responsabilidade |
+| --- | --- | --- | --- |
+| CI/CD | `.github/workflows/ci-cd.yml` | Push na `main`, pull requests e execução manual | Build, testes, imagem Docker e deploy em Kubernetes |
+| SonarQube | `.github/workflows/sonar.yml` | Push na `main` e pull requests | Testes com cobertura e análise no SonarQube Cloud |
 
-### Pipeline
+### Estratégia de deploy
 
-O processo automatizado executa as principais etapas necessárias para validar a aplicação:
+O cluster Kubernetes do projeto é local (kind no WSL) e não pode ser acessado pelos runners do GitHub Actions, que executam na nuvem. Para que o deploy seja de fato executado e verificável a cada alteração, o pipeline cria um **cluster efêmero no próprio runner** utilizando o mesmo Terraform de `infra/`, aplica os mesmos manifestos de `k8s/` com a imagem recém-publicada, verifica a aplicação e remove o cluster ao final.
+
+Dessa forma, cada push na `main` comprova que a infraestrutura, os manifestos e a imagem publicada funcionam em conjunto, sem custo e sem expor o ambiente local. Localmente, o mesmo deploy é realizado por `scripts/deploy-local.sh`.
+
+### Fluxo do pipeline
+
+```mermaid
+flowchart LR
+    pr["Pull request"] --> bt
+    push["Push na main<br/>ou execução manual"] --> bt
+
+    bt["build-test<br/>PostgreSQL 18 · schema e seed<br/>restore · build · testes"]
+    bt --> img["image<br/>docker build com cache"]
+
+    img -- "pull request:<br/>apenas valida o Dockerfile" --> fim(["fim"])
+    img -- "main" --> ghcr[("GHCR<br/>garagehub-api<br/>tags sha-xxxxxxx e latest")]
+
+    ghcr --> dep
+
+    subgraph dep["deploy (runner do GitHub Actions)"]
+        direction TB
+        tf["terraform apply<br/>cluster kind + metrics-server + infra do banco"]
+        load["docker pull da imagem publicada<br/>kind load"]
+        secrets["k8s/secrets.env gerado<br/>a partir dos GitHub Secrets"]
+        apply["kubectl apply -k k8s/<br/>aguarda rollout do banco e da API"]
+        smoke["smoke test"]
+        hpa["demonstração do HPA"]
+        destroy["terraform destroy"]
+        tf --> load --> secrets --> apply --> smoke --> hpa --> destroy
+    end
+```
+
+### Jobs
+
+| Job | Executa em | Etapas |
+| --- | --- | --- |
+| `build-test` | Todos os eventos | PostgreSQL 18 como serviço, execução do schema e do seed, restore, build e testes unitários e de integração (com cobertura mínima de 80%) |
+| `image` | Todos os eventos | Build da imagem com cache. Em pull requests, apenas valida o Dockerfile. Na `main`, publica no GHCR com as tags `sha-<commit>` e `latest` |
+| `deploy` | Push na `main` e execução manual | `terraform apply` (cluster kind no runner), carga da imagem publicada, geração do Secret a partir dos GitHub Secrets, `kubectl apply -k`, aguardo do rollout, smoke test, demonstração do HPA e `terraform destroy` |
+
+A etapa de demonstração do HPA é informativa: como o resultado depende dos recursos do runner, ela não reprova o pipeline. Os valores do HPA e o consumo dos pods ficam registrados no log da etapa **Demonstração do HPA** do job `deploy`.
+
+Em caso de falha, a etapa **Diagnóstico** exibe o estado dos recursos, os eventos e os logs dos pods. O cluster é sempre removido ao final, mesmo quando uma etapa anterior falha.
+
+### Configuração necessária
+
+Secrets do repositório (**Settings → Secrets and variables → Actions**):
+
+| Secret | Utilização |
+| --- | --- |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL no cluster efêmero |
+| `JWT_KEY` | Chave de assinatura dos tokens JWT (mínimo de 32 caracteres) |
+| `SONAR_TOKEN` | Token do SonarQube Cloud, utilizado pelo `sonar.yml` |
+
+A publicação no GHCR utiliza o `GITHUB_TOKEN` gerado automaticamente pelo GitHub Actions, sem necessidade de configurar credenciais.
+
+### Imagem publicada
 
 ```text
-Checkout do código
-        ↓
-Configuração do .NET
-        ↓
-Configuração do Java
-        ↓
-Inicialização do PostgreSQL
-        ↓
-Criação do schema e execução do seed
-        ↓
-Inicialização da análise SonarQube
-        ↓
-Restore
-        ↓
-Build
-        ↓
-Testes unitários e de integração
-        ↓
-Geração do relatório de cobertura
-        ↓
-Envio da análise e cobertura ao SonarQube Cloud
+ghcr.io/beatavernaro/garagehub-api:latest
+ghcr.io/beatavernaro/garagehub-api:sha-<commit>
 ```
+
+A tag `sha-<commit>` identifica exatamente o código que gerou a imagem e é a utilizada pelo deploy.
 
 ### Banco de dados no CI
 
-Como os testes de integração dependem do PostgreSQL, o próprio workflow inicializa uma instância isolada do banco durante sua execução.
-
-Antes dos testes são executados:
-
-```text
-01-schema.sql
-02-seed.sql
-```
+Como os testes de integração dependem do PostgreSQL, os workflows inicializam uma instância isolada do banco durante sua execução e executam os scripts `01-schema.sql` e `02-seed.sql` antes dos testes.
 
 Isso permite que os testes de integração sejam executados em um ambiente novo e reproduzível, sem depender do banco de dados utilizado durante o desenvolvimento local.
 
-### Validação automatizada
+### Workflow do SonarQube
 
-O pipeline verifica automaticamente:
+O `sonar.yml` executa os testes com geração de cobertura e envia a análise ao SonarQube Cloud:
 
-- Restauração das dependências;
-- Compilação da solução;
-- Execução dos testes unitários;
-- Execução dos testes de integração;
-- Geração da cobertura;
-- Análise estática;
-- Critérios de qualidade do SonarQube Cloud.
+```text
+Checkout do código → Configuração do .NET e do Java → Inicialização do PostgreSQL
+→ Criação do schema e execução do seed → Início da análise SonarQube → Restore → Build
+→ Testes unitários e de integração com cobertura → Envio da análise ao SonarQube Cloud
+```
 
-Essa automação reduz a possibilidade de alterações incompatíveis serem incorporadas ao projeto sem que problemas de compilação, testes ou qualidade sejam identificados.
+## 🩺 Solução de problemas
+
+| Sintoma | Causa provável | Solução |
+| --- | --- | --- |
+| `docker` não é reconhecido no PowerShell ou no Git Bash | Docker Engine instalado dentro do WSL | Execute os comandos de infraestrutura no terminal do WSL |
+| No WSL, `Could not resolve host` ou falha ao baixar imagens | DNS do WSL indisponível | Adicione `[wsl2]` e `dnsTunneling=true` ao arquivo `%USERPROFILE%\.wslconfig` e execute `wsl --shutdown` |
+| `terraform apply` falha em `kubeadm init` | Imagem dos nós incompatível com o provider | Utilize o valor padrão da variável `node_image` (Kubernetes v1.35.0) |
+| `terraform destroy` falha com `Failed to read namespace` ou `connection refused` em `localhost` | O cluster foi removido ou será substituído e os providers ficaram sem endpoint | `terraform -chdir=infra destroy -refresh=false` |
+| O cluster consta no state, mas não responde (por exemplo, após reiniciar a máquina) | Os containers dos nós do kind não foram reiniciados | `docker start garagehub-control-plane garagehub-worker`. Se o cluster não voltar a funcionar, recrie com `destroy -refresh=false` e `apply` |
+| HPA exibe `<unknown>` nas metas | metrics-server ainda coletando as primeiras métricas | Aguarde cerca de 1 minuto e confira com `kubectl -n garagehub top pods` |
+| `localhost:30080` não responde no Windows | Encaminhamento de portas do WSL | Teste no WSL com `curl localhost:30080/health/live`. Se funcionar, acesse pelo IP do WSL (`hostname -I`) |
+| `deploy-local.sh` informa que falta `k8s/secrets.env` | Arquivo de secrets não criado | `cp k8s/secrets.env.example k8s/secrets.env` e defina valores próprios |
+| Porta 30080 ou 8080 em uso | Outro processo utilizando a porta | Altere `api_node_port` no Terraform e `nodePort` em `k8s/api-service.yaml`, ou a porta no `docker-compose.yml` |
+| Alterações nos scripts SQL não aparecem no banco | Os scripts só são executados com o volume vazio | Recrie o banco conforme abaixo |
+
+### Recriar o banco de dados
+
+Docker Compose:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Kubernetes:
+
+```bash
+terraform -chdir=infra apply                                 # atualiza o ConfigMap com os scripts
+kubectl -n garagehub delete statefulset garagehub-db
+kubectl -n garagehub delete pvc data-garagehub-db-0
+kubectl apply -k k8s/                                        # recria o banco com um volume novo
+kubectl -n garagehub rollout restart deployment/garagehub-api
+```
+
+Com a política `Retain`, o volume anterior permanece com status `Released` e pode ser removido com `kubectl delete pv <nome>`. Também é possível recriar todo o ambiente com `terraform -chdir=infra destroy`, `terraform -chdir=infra apply` e `bash scripts/deploy-local.sh`.
 
 ## 📝 Decisões técnicas, premissas e limitações do MVP
 
@@ -1248,11 +1763,31 @@ Os orçamentos possuem regra de expiração para evitar que propostas permaneça
 
 A expiração faz parte das regras de domínio e é verificada durante os fluxos relacionados ao orçamento.
 
+### Kubernetes local com kind
+
+O kind executa um cluster Kubernetes completo em containers Docker, sem máquinas virtuais e sem custo. Ele funciona no WSL 2 com Docker Engine e também nos runners do GitHub Actions, o que permite usar a mesma infraestrutura localmente e no pipeline.
+
+### Cluster efêmero no CI/CD
+
+Como o cluster local não é acessível pelos runners do GitHub, o deploy automatizado acontece em um cluster criado e removido a cada execução. A alternativa de um runner self-hosted no ambiente local foi descartada, pois dependeria da máquina ligada e exporia o ambiente local à execução de workflows.
+
+### Separação entre Terraform e manifestos
+
+O Terraform provisiona a plataforma (cluster, metrics-server e infraestrutura do banco), enquanto os manifestos de `k8s/` descrevem as cargas de trabalho. Os scripts SQL são lidos pelo Terraform diretamente de `src/`, mantendo uma única fonte para o schema e o seed em todos os ambientes.
+
+### PostgreSQL em StatefulSet
+
+O banco é executado em um StatefulSet com uma réplica e volume persistente, o que garante identidade estável e preservação dos dados. Alta disponibilidade e replicação do banco estão fora do escopo deste MVP; em produção, seria recomendável utilizar um serviço gerenciado ou um operador de PostgreSQL.
+
+### Secrets gerados a partir de arquivo não versionado
+
+O `secretGenerator` do kustomize gera o Secret a partir de `k8s/secrets.env`, que não é versionado. Assim, o Secret é declarado junto com os demais manifestos sem que nenhuma credencial seja armazenada no repositório.
+
 ### Credenciais de desenvolvimento
 
 O projeto possui credenciais destinadas exclusivamente à execução local e avaliação acadêmica.
 
-Essa abordagem facilita a inicialização do ambiente através do Docker sem etapas adicionais de configuração.
+Essa abordagem facilita a inicialização do ambiente através do Docker sem etapas adicionais de configuração. Os valores padrão do Docker Compose podem ser substituídos pelo arquivo `.env`, enquanto os ambientes Kubernetes e CI/CD não utilizam credenciais versionadas.
 
 Em produção, essa estratégia seria substituída por gerenciamento adequado de secrets, separação de configurações por ambiente e rotação de credenciais.
 
@@ -1262,12 +1797,14 @@ Por se tratar da primeira versão do sistema, o objetivo é atender aos fluxos c
 
 Funcionalidades de uma solução comercial completa, como interfaces web/mobile, notificações externas, integrações com sistemas de pagamento, infraestrutura de produção e mecanismos avançados de observabilidade não fazem parte do escopo desta versão.
 
+Na infraestrutura, também ficam fora do escopo: Ingress e TLS, alta disponibilidade do banco, state remoto do Terraform e ambientes de nuvem. O metrics-server utiliza `--kubelet-insecure-tls`, aceitável apenas no cluster local.
+
 A arquitetura e a separação das responsabilidades foram estruturadas para permitir que novas funcionalidades sejam incorporadas conforme a evolução do sistema.
 
 ## 👩‍💻 Autora
 
 [**Beatriz Tavernaro**](https://www.linkedin.com/in/beatriz-tavernaro)
 
-Projeto desenvolvido para o **Tech Challenge – Fase 1 da Pós Tech em Software Architecture da FIAP**.
+Projeto desenvolvido para o **Tech Challenge – Fases 1 e 2 da Pós Tech em Software Architecture da FIAP**.
 
 Este repositório possui finalidade acadêmica e foi desenvolvido como parte da aplicação prática dos conceitos abordados durante a fase.
