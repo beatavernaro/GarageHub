@@ -1,3 +1,4 @@
+using Application.DTOs.Orcamento;
 using Application.DTOs.OrdemServico;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
@@ -13,6 +14,9 @@ public class OrdemServicoService(
     IOrcamentoRepository orcamentoRepository,
     IClienteRepository clienteRepository,
     IVeiculoRepository veiculoRepository,
+    IServicoRepository servicoRepository,
+    IItemEstoqueRepository itemEstoqueRepository,
+    IUnitOfWork unitOfWork,
     ICurrentUser currentUser)
     : IOrdemServicoService
 {
@@ -20,7 +24,16 @@ public class OrdemServicoService(
     private readonly IOrcamentoRepository _orcamentoRepository = orcamentoRepository;
     private readonly IClienteRepository _clienteRepository = clienteRepository;
     private readonly IVeiculoRepository _veiculoRepository = veiculoRepository;
+    private readonly IServicoRepository _servicoRepository = servicoRepository;
+    private readonly IItemEstoqueRepository _itemEstoqueRepository = itemEstoqueRepository;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUser _currentUser = currentUser;
+
+    private static readonly StatusOrdemServico[] StatusEmAndamento =
+    [
+        StatusOrdemServico.EmExecucao,
+        StatusOrdemServico.AguardandoExecucao
+    ];
 
     public async Task<OrdemServicoDto?> ObterPorIdAsync(Guid id)
     {
@@ -38,6 +51,37 @@ public class OrdemServicoService(
             await _ordemServicoRepository.ObterTodosAsync();
 
         return ordens.Select(MapearParaDto);
+    }
+
+    public async Task<IEnumerable<OrdemServicoDto>> ObterEmAndamentoAsync()
+    {
+        var ordens =
+            await _ordemServicoRepository.ObterTodosAsync();
+
+        // Ordena pela prioridade do status e, dentro de cada status, das mais antigas para as mais recentes
+        return ordens
+            .Where(x => StatusEmAndamento.Contains(x.Status))
+            .OrderBy(x => Array.IndexOf(StatusEmAndamento, x.Status))
+            .ThenBy(x => x.DataCriacao)
+            .Select(MapearParaDto);
+    }
+
+    public async Task<StatusOrdemServicoDto?> ObterStatusAsync(Guid id)
+    {
+        var ordemServico =
+            await _ordemServicoRepository.ObterPorIdAsync(id);
+
+        if (ordemServico is null)
+            return null;
+
+        return new StatusOrdemServicoDto
+        {
+            OrdemServicoId = ordemServico.Id,
+            Status = ordemServico.Status,
+            Descricao =
+                FormatarStatusOrdemServico(
+                    ordemServico.Status)
+        };
     }
 
     public async Task<AcompanhamentoOrdemServicoDto?>
@@ -149,6 +193,216 @@ public class OrdemServicoService(
             ordemServico);
 
         return MapearParaDto(ordemServico);
+    }
+
+    public async Task<AberturaOrdemServicoDto> AbrirAsync(
+        AbrirOrdemServicoDto dto)
+    {
+        ValidarAbertura(dto);
+
+        await ValidarClienteEVeiculoAsync(
+            dto.ClienteId,
+            dto.VeiculoId);
+
+        // 1. Gera o orçamento vinculado com os itens informados
+        var orcamento = new Orcamento(
+            dto.ClienteId,
+            dto.VeiculoId,
+            _currentUser.Id);
+
+        foreach (var servicoDto in dto.Servicos)
+        {
+            var servico =
+                await _servicoRepository.ObterPorIdAsync(
+                    servicoDto.ServicoId)
+                ?? throw new DomainException(
+                    "Serviço não encontrado.");
+
+            if (!servico.Ativo)
+            {
+                throw new DomainException(
+                    "Não é possível abrir uma ordem de serviço com um serviço inativo.");
+            }
+
+            orcamento.AdicionarItem(
+                new OrcamentoItem(
+                    orcamento.Id,
+                    servico.Id,
+                    null,
+                    servico.Nome,
+                    servico.Descricao,
+                    servicoDto.Quantidade,
+                    servicoDto.ValorUnitario ?? servico.Preco,
+                    _currentUser.Id),
+                _currentUser.Id);
+        }
+
+        foreach (var itemDto in dto.Itens)
+        {
+            var itemEstoque =
+                await _itemEstoqueRepository.ObterPorIdAsync(
+                    itemDto.ItemEstoqueId)
+                ?? throw new DomainException(
+                    "Item de estoque não encontrado.");
+
+            if (!itemEstoque.Ativo)
+            {
+                throw new DomainException(
+                    "Não é possível abrir uma ordem de serviço com um item de estoque inativo.");
+            }
+
+            orcamento.AdicionarItem(
+                new OrcamentoItem(
+                    orcamento.Id,
+                    null,
+                    itemEstoque.Id,
+                    itemEstoque.Nome,
+                    itemEstoque.Descricao,
+                    itemDto.Quantidade,
+                    itemDto.ValorUnitario ?? itemEstoque.Preco,
+                    _currentUser.Id),
+                _currentUser.Id);
+        }
+
+        if (dto.Desconto != 0)
+        {
+            orcamento.AplicarDesconto(
+                dto.Desconto,
+                _currentUser.Id);
+        }
+
+        // 2. Aprova o orçamento, pois a abertura já representa a autorização do atendimento
+        orcamento.ColocarEmAguardandoCliente(
+            _currentUser.Id);
+
+        orcamento.Aprovar(
+            _currentUser.Id);
+
+        // 3. Grava o orçamento e gera a Ordem de Serviço na mesma transação
+        OrdemServicoDto ordemServico = null!;
+
+        await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
+        {
+            await _orcamentoRepository
+                .AdicionarAsync(orcamento);
+
+            await _orcamentoRepository
+                .AtualizarItensAsync(orcamento);
+
+            await _orcamentoRepository
+                .AtualizarAsync(orcamento);
+
+            ordemServico =
+                await CriarAsync(orcamento.Id);
+        });
+
+        // 4. Somente depois verifica o estoque
+        var itensInsuficientes =
+            await VerificarEstoqueInsuficienteAsync(
+                orcamento);
+
+        return new AberturaOrdemServicoDto
+        {
+            OrdemServicoId = ordemServico.Id,
+            OrcamentoId = orcamento.Id,
+
+            Mensagem = itensInsuficientes.Count == 0
+                ? "Ordem de serviço aberta."
+                : "Ordem de serviço aberta, mas existem itens com estoque insuficiente.",
+
+            ItensInsuficientes = itensInsuficientes
+        };
+    }
+
+    private static void ValidarAbertura(
+        AbrirOrdemServicoDto dto)
+    {
+        if (dto.Servicos.Count == 0)
+        {
+            throw new DomainException(
+                "A ordem de serviço deve possuir pelo menos um serviço.");
+        }
+
+        if (dto.Servicos
+                .GroupBy(x => x.ServicoId)
+                .Any(x => x.Count() > 1))
+        {
+            throw new DomainException(
+                "O mesmo serviço não pode ser informado mais de uma vez.");
+        }
+
+        if (dto.Itens
+                .GroupBy(x => x.ItemEstoqueId)
+                .Any(x => x.Count() > 1))
+        {
+            throw new DomainException(
+                "O mesmo item de estoque não pode ser informado mais de uma vez.");
+        }
+    }
+
+    private async Task ValidarClienteEVeiculoAsync(
+        Guid clienteId,
+        Guid veiculoId)
+    {
+        var cliente =
+            await _clienteRepository.ObterPorIdAsync(clienteId)
+            ?? throw new DomainException(
+                "Cliente não encontrado.");
+
+        if (!cliente.Ativo)
+        {
+            throw new DomainException(
+                "Não é possível abrir uma ordem de serviço para um cliente inativo.");
+        }
+
+        var veiculo =
+            await _veiculoRepository.ObterPorIdAsync(veiculoId)
+            ?? throw new DomainException(
+                "Veículo não encontrado.");
+
+        if (!veiculo.Ativo)
+        {
+            throw new DomainException(
+                "Não é possível abrir uma ordem de serviço para um veículo inativo.");
+        }
+
+        if (veiculo.ClienteId != clienteId)
+        {
+            throw new DomainException(
+                "O veículo informado não pertence ao cliente.");
+        }
+    }
+
+    private async Task<List<ItemEstoqueInsuficienteDto>>
+    VerificarEstoqueInsuficienteAsync(Orcamento orcamento)
+    {
+        var resultado = new List<ItemEstoqueInsuficienteDto>();
+
+        foreach (var item in orcamento.Itens
+                     .Where(x => x.Ativo && x.ItemEstoqueId.HasValue))
+        {
+            var itemEstoque =
+                await _itemEstoqueRepository.ObterPorIdAsync(
+                    item.ItemEstoqueId.GetValueOrDefault());
+
+            if (itemEstoque is null)
+                continue;
+
+            if (itemEstoque.Estoque >= item.Quantidade)
+                continue;
+
+            resultado.Add(new ItemEstoqueInsuficienteDto
+            {
+                ItemEstoqueId = itemEstoque.Id,
+                Nome = itemEstoque.Nome,
+                QuantidadeDisponivel = itemEstoque.Estoque,
+                QuantidadeNecessaria = item.Quantidade,
+                QuantidadeFaltante =
+                    item.Quantidade - itemEstoque.Estoque
+            });
+        }
+
+        return resultado;
     }
 
     public async Task AlterarStatusServicoAsync(

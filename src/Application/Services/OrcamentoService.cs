@@ -15,6 +15,7 @@ public class OrcamentoService(
     IServicoRepository servicoRepository,
     IItemEstoqueRepository itemEstoqueRepository,
     IOrdemServicoService ordemServicoService,
+    IUnitOfWork unitOfWork,
     ICurrentUser currentUser) : IOrcamentoService
 {
     private readonly IOrcamentoRepository _orcamentoRepository =
@@ -33,8 +34,16 @@ public class OrcamentoService(
         itemEstoqueRepository;
     private readonly IOrdemServicoService _ordemServicoService =
         ordemServicoService;
+    private readonly IUnitOfWork _unitOfWork =
+        unitOfWork;
     private readonly ICurrentUser _currentUser =
         currentUser;
+
+    private static readonly StatusOrcamento[] StatusPendentes =
+    [
+        StatusOrcamento.AguardandoCliente,
+        StatusOrcamento.EmElaboracao
+    ];
 
     public async Task<OrcamentoDto?> ObterPorIdAsync(Guid id)
     {
@@ -72,6 +81,37 @@ public class OrcamentoService(
             await VerificarExpiracaoAsync(orcamento);
 
         return orcamentos.Select(MapearParaDto);
+    }
+
+    public async Task<IEnumerable<OrcamentoDto>> ObterPendentesAsync()
+    {
+        var orcamentos =
+            await ObterTodosComExpiracaoVerificadaAsync();
+
+        // Ordena pela prioridade do status e, dentro de cada status, dos mais antigos para os mais recentes
+        return orcamentos
+            .Where(x => StatusPendentes.Contains(x.Status))
+            .OrderBy(x => Array.IndexOf(StatusPendentes, x.Status))
+            .ThenBy(x => x.DataCriacao)
+            .Select(MapearParaDto);
+    }
+
+    public async Task<IEnumerable<OrcamentoDto>> ObterPorStatusAsync(
+        StatusOrcamento status)
+    {
+        if (!Enum.IsDefined(status))
+        {
+            throw new DomainException(
+                "Status do orçamento inválido.");
+        }
+
+        var orcamentos =
+            await ObterTodosComExpiracaoVerificadaAsync();
+
+        return orcamentos
+            .Where(x => x.Status == status)
+            .OrderBy(x => x.DataCriacao)
+            .Select(MapearParaDto);
     }
 
     public async Task<OrcamentoDto> CriarAsync(
@@ -295,12 +335,15 @@ public class OrcamentoService(
     // 1. Cliente aprova o orçamento
     orcamento.Aprovar(_currentUser.Id);
 
-    await _orcamentoRepository
-        .AtualizarAsync(orcamento);
+    // 2. Grava a aprovação e gera automaticamente a Ordem de Serviço na mesma transação
+    await _unitOfWork.ExecutarEmTransacaoAsync(async () =>
+    {
+        await _orcamentoRepository
+            .AtualizarAsync(orcamento);
 
-    // 2. Gera automaticamente a Ordem de Serviço
-    await _ordemServicoService
-        .CriarAsync(orcamento.Id);
+        await _ordemServicoService
+            .CriarAsync(orcamento.Id);
+    });
 
     // 3. Somente depois verifica o estoque
     var itensInsuficientes =
@@ -363,6 +406,19 @@ public class OrcamentoService(
         await VerificarExpiracaoAsync(orcamento);
 
         return orcamento;
+    }
+
+    // A expiração é verificada antes de filtrar, para que um orçamento vencido
+    // não seja listado como aguardando cliente
+    private async Task<List<Orcamento>> ObterTodosComExpiracaoVerificadaAsync()
+    {
+        var orcamentos =
+            (await _orcamentoRepository.ObterTodosAsync()).ToList();
+
+        foreach (var orcamento in orcamentos)
+            await VerificarExpiracaoAsync(orcamento);
+
+        return orcamentos;
     }
 
     private async Task VerificarExpiracaoAsync(

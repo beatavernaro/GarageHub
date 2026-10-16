@@ -1,4 +1,5 @@
 using Application.DTOs.Orcamento;
+using Application.DTOs.OrdemServico;
 using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
@@ -19,6 +20,7 @@ public class OrcamentoServiceTests
     private readonly Mock<IServicoRepository> _servicoRepositoryMock;
     private readonly Mock<IItemEstoqueRepository> _itemEstoqueRepositoryMock;
     private readonly Mock<IOrdemServicoService> _ordemServicoServiceMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
 
     private readonly OrcamentoService _service;
@@ -45,6 +47,16 @@ public class OrcamentoServiceTests
         _ordemServicoServiceMock =
             new Mock<IOrdemServicoService>();
 
+        _unitOfWorkMock =
+            new Mock<IUnitOfWork>();
+
+        _unitOfWorkMock
+            .Setup(x =>
+                x.ExecutarEmTransacaoAsync(
+                    It.IsAny<Func<Task>>()))
+            .Returns<Func<Task>>(
+                operacao => operacao());
+
         _currentUserMock =
             new Mock<ICurrentUser>();
 
@@ -59,6 +71,7 @@ public class OrcamentoServiceTests
             _servicoRepositoryMock.Object,
             _itemEstoqueRepositoryMock.Object,
             _ordemServicoServiceMock.Object,
+            _unitOfWorkMock.Object,
             _currentUserMock.Object);
     }
 
@@ -93,6 +106,162 @@ public class OrcamentoServiceTests
             await _service.ObterPorIdAsync(id);
 
         resultado.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ObterPendentesAsync_Deve_Ordenar_Por_Status_E_Data_De_Criacao()
+    {
+        var agora = DateTime.UtcNow;
+
+        var elaboracaoAntigo =
+            CriarOrcamentoComStatus(StatusOrcamento.EmElaboracao, agora.AddDays(-5));
+        var elaboracaoRecente =
+            CriarOrcamentoComStatus(StatusOrcamento.EmElaboracao, agora.AddDays(-1));
+        var aguardandoAntigo =
+            CriarOrcamentoComStatus(StatusOrcamento.AguardandoCliente, agora.AddDays(-4));
+        var aguardandoRecente =
+            CriarOrcamentoComStatus(StatusOrcamento.AguardandoCliente, agora.AddDays(-2));
+
+        _orcamentoRepositoryMock
+            .Setup(x => x.ObterTodosAsync())
+            .ReturnsAsync(
+            [
+                elaboracaoRecente,
+                aguardandoRecente,
+                elaboracaoAntigo,
+                aguardandoAntigo
+            ]);
+
+        var resultado =
+            (await _service.ObterPendentesAsync())
+            .ToList();
+
+        resultado.Select(x => x.Id).Should()
+            .Equal(
+                aguardandoAntigo.Id,
+                aguardandoRecente.Id,
+                elaboracaoAntigo.Id,
+                elaboracaoRecente.Id);
+    }
+
+    [Fact]
+    public async Task ObterPendentesAsync_Nao_Deve_Retornar_Orcamentos_Finalizados()
+    {
+        var emElaboracao =
+            CriarOrcamentoComStatus(StatusOrcamento.EmElaboracao, DateTime.UtcNow);
+
+        _orcamentoRepositoryMock
+            .Setup(x => x.ObterTodosAsync())
+            .ReturnsAsync(
+            [
+                CriarOrcamentoComStatus(StatusOrcamento.Aprovado, DateTime.UtcNow),
+                CriarOrcamentoComStatus(StatusOrcamento.Rejeitado, DateTime.UtcNow),
+                emElaboracao,
+                CriarOrcamentoComStatus(StatusOrcamento.Cancelado, DateTime.UtcNow),
+                CriarOrcamentoComStatus(StatusOrcamento.Expirado, DateTime.UtcNow)
+            ]);
+
+        var resultado =
+            await _service.ObterPendentesAsync();
+
+        resultado.Should().ContainSingle()
+            .Which.Id.Should().Be(emElaboracao.Id);
+    }
+
+    [Fact]
+    public async Task ObterPendentesAsync_Nao_Deve_Retornar_Orcamento_Vencido()
+    {
+        var vencido =
+            CriarOrcamentoComStatus(
+                StatusOrcamento.AguardandoCliente,
+                DateTime.UtcNow.AddDays(-20),
+                dataEnvioCliente: DateTime.UtcNow.AddDays(-16));
+
+        _orcamentoRepositoryMock
+            .Setup(x => x.ObterTodosAsync())
+            .ReturnsAsync([vencido]);
+
+        var resultado =
+            await _service.ObterPendentesAsync();
+
+        resultado.Should().BeEmpty();
+
+        vencido.Status.Should()
+            .Be(StatusOrcamento.Expirado);
+
+        _orcamentoRepositoryMock.Verify(
+            x => x.AtualizarAsync(vencido),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ObterPorStatusAsync_Deve_Retornar_Somente_Orcamentos_Do_Status()
+    {
+        var agora = DateTime.UtcNow;
+
+        var aprovadoRecente =
+            CriarOrcamentoComStatus(StatusOrcamento.Aprovado, agora.AddDays(-1));
+        var aprovadoAntigo =
+            CriarOrcamentoComStatus(StatusOrcamento.Aprovado, agora.AddDays(-3));
+
+        _orcamentoRepositoryMock
+            .Setup(x => x.ObterTodosAsync())
+            .ReturnsAsync(
+            [
+                aprovadoRecente,
+                CriarOrcamentoComStatus(StatusOrcamento.Rejeitado, agora),
+                aprovadoAntigo,
+                CriarOrcamentoComStatus(StatusOrcamento.EmElaboracao, agora)
+            ]);
+
+        var resultado =
+            (await _service.ObterPorStatusAsync(
+                StatusOrcamento.Aprovado))
+            .ToList();
+
+        resultado.Select(x => x.Id).Should()
+            .Equal(
+                aprovadoAntigo.Id,
+                aprovadoRecente.Id);
+
+        resultado.Should()
+            .OnlyContain(x =>
+                x.Status == StatusOrcamento.Aprovado);
+    }
+
+    [Fact]
+    public async Task ObterPorStatusAsync_Deve_Retornar_Lista_Vazia_Quando_Nao_Houver_Orcamentos()
+    {
+        _orcamentoRepositoryMock
+            .Setup(x => x.ObterTodosAsync())
+            .ReturnsAsync(
+            [
+                CriarOrcamentoComStatus(StatusOrcamento.EmElaboracao, DateTime.UtcNow)
+            ]);
+
+        var resultado =
+            await _service.ObterPorStatusAsync(
+                StatusOrcamento.Cancelado);
+
+        resultado.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ObterPorStatusAsync_Nao_Deve_Permitir_Status_Invalido()
+    {
+        var acao =
+            async () =>
+                await _service.ObterPorStatusAsync(
+                    (StatusOrcamento)99);
+
+        await acao.Should()
+            .ThrowAsync<DomainException>()
+            .WithMessage(
+                "Status do orçamento inválido.");
+
+        _orcamentoRepositoryMock.Verify(
+            x => x.ObterTodosAsync(),
+            Times.Never);
     }
 
     [Fact]
@@ -769,6 +938,95 @@ public class OrcamentoServiceTests
         _ordemServicoServiceMock.Verify(
             x => x.CriarAsync(orcamento.Id),
             Times.Once);
+
+        _unitOfWorkMock.Verify(
+            x => x.ExecutarEmTransacaoAsync(
+                It.IsAny<Func<Task>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AprovarAsync_Deve_Gravar_Aprovacao_E_Gerar_Ordem_Na_Mesma_Transacao()
+    {
+        var orcamento =
+            CriarOrcamentoComItem();
+
+        orcamento.ColocarEmAguardandoCliente(
+            Guid.NewGuid());
+
+        _orcamentoRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(orcamento.Id))
+            .ReturnsAsync(orcamento);
+
+        var emTransacao = false;
+        var atualizouEmTransacao = false;
+        var gerouOrdemEmTransacao = false;
+
+        _unitOfWorkMock
+            .Setup(x =>
+                x.ExecutarEmTransacaoAsync(
+                    It.IsAny<Func<Task>>()))
+            .Returns<Func<Task>>(async operacao =>
+            {
+                emTransacao = true;
+                await operacao();
+                emTransacao = false;
+            });
+
+        _orcamentoRepositoryMock
+            .Setup(x =>
+                x.AtualizarAsync(orcamento))
+            .Callback(() =>
+                atualizouEmTransacao = emTransacao)
+            .Returns(Task.CompletedTask);
+
+        _ordemServicoServiceMock
+            .Setup(x =>
+                x.CriarAsync(orcamento.Id))
+            .Callback(() =>
+                gerouOrdemEmTransacao = emTransacao)
+            .ReturnsAsync(new OrdemServicoDto());
+
+        await _service.AprovarAsync(
+            orcamento.Id);
+
+        atualizouEmTransacao.Should().BeTrue();
+        gerouOrdemEmTransacao.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AprovarAsync_Deve_Propagar_Falha_Na_Geracao_Da_Ordem()
+    {
+        var orcamento =
+            CriarOrcamentoComItem();
+
+        orcamento.ColocarEmAguardandoCliente(
+            Guid.NewGuid());
+
+        _orcamentoRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(orcamento.Id))
+            .ReturnsAsync(orcamento);
+
+        _ordemServicoServiceMock
+            .Setup(x =>
+                x.CriarAsync(orcamento.Id))
+            .ThrowsAsync(new InvalidOperationException(
+                "Falha ao gravar a ordem de serviço."));
+
+        var acao =
+            async () =>
+                await _service.AprovarAsync(
+                    orcamento.Id);
+
+        await acao.Should()
+            .ThrowAsync<InvalidOperationException>();
+
+        _itemEstoqueRepositoryMock.Verify(
+            x => x.ObterPorIdAsync(
+                It.IsAny<Guid>()),
+            Times.Never);
     }
 
     [Fact]
@@ -977,6 +1235,28 @@ public class OrcamentoServiceTests
             clienteId ?? Guid.NewGuid(),
             veiculoId ?? Guid.NewGuid(),
             Guid.NewGuid());
+    }
+
+    private static Orcamento CriarOrcamentoComStatus(
+        StatusOrcamento status,
+        DateTime dataCriacao,
+        DateTime? dataEnvioCliente = null)
+    {
+        return new Orcamento(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            status,
+            0m,
+            100m,
+            dataEnvioCliente,
+            null,
+            null,
+            Guid.NewGuid(),
+            dataCriacao,
+            null,
+            null,
+            true);
     }
 
     private static Orcamento CriarOrcamentoComItem()

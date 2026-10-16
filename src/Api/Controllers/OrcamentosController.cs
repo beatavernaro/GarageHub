@@ -50,6 +50,29 @@ public class OrcamentosController(IOrcamentoService orcamentoService) : Controll
         return Ok(orcamentos);
     }
 
+    [HttpGet("pendentes")]
+    [EndpointSummary("Obtém os orçamentos pendentes")]
+    [EndpointDescription("Retorna os orçamentos ordenados por status: aguardando cliente e, em seguida, em elaboração. Dentro de cada status, os mais antigos aparecem primeiro. Orçamentos aprovados, rejeitados, cancelados e expirados não são retornados.")]
+    [ProducesResponseType(typeof(IEnumerable<OrcamentoDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<OrcamentoDto>>> ObterPendentes()
+    {
+        var orcamentos = await _orcamentoService.ObterPendentesAsync();
+
+        return Ok(orcamentos);
+    }
+
+    [HttpGet("status/{status}")]
+    [EndpointSummary("Obtém os orçamentos por status")]
+    [EndpointDescription("Retorna os orçamentos com o status informado, dos mais antigos para os mais recentes. Status aceitos: EmElaboracao, AguardandoCliente, Aprovado, Rejeitado, Cancelado e Expirado.")]
+    [ProducesResponseType(typeof(IEnumerable<OrcamentoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<OrcamentoDto>>> ObterPorStatus([FromRoute] StatusOrcamento status)
+    {
+        var orcamentos = await _orcamentoService.ObterPorStatusAsync(status);
+
+        return Ok(orcamentos);
+    }
+
     [HttpPost]
     [EndpointSummary("Cria um novo orçamento")]
     [EndpointDescription("Cria um orçamento para o cliente e veículo informados.")]

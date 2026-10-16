@@ -51,6 +51,7 @@ O objetivo principal do projeto é oferecer uma base estruturada para o gerencia
 - Inclusão de serviços, peças e insumos no orçamento
 - Aprovação, rejeição, cancelamento e expiração de orçamentos
 - Geração automática da Ordem de Serviço após a aprovação do orçamento
+- Abertura direta da Ordem de Serviço informando cliente, veículo, serviços e peças
 - Controle do status dos serviços executados
 - Atualização automática do status da Ordem de Serviço
 - Consulta do andamento da Ordem de Serviço
@@ -274,6 +275,22 @@ Quando um orçamento é aprovado, o sistema gera automaticamente a **Ordem de Se
 A Ordem de Serviço mantém as informações necessárias para execução do atendimento, incluindo cliente, veículo, serviços e valores definidos no orçamento aprovado.
 
 Durante a aprovação, o sistema também verifica a disponibilidade dos itens de estoque necessários e informa quando existem itens com quantidade insuficiente.
+
+A gravação da aprovação e a geração da Ordem de Serviço ocorrem na mesma transação: se a OS não puder ser gravada, a aprovação também é desfeita.
+
+### Abertura direta da Ordem de Serviço
+
+Para atendimentos em que o serviço já está autorizado no momento da chegada do veículo, a Ordem de Serviço pode ser aberta em uma única requisição, informando cliente, veículo, serviços e peças.
+
+Como toda Ordem de Serviço pertence a um orçamento, o sistema gera automaticamente um orçamento já aprovado com os itens informados e, a partir dele, cria a OS. Dessa forma, as mesmas regras de domínio da aprovação são aplicadas:
+
+- O cliente e o veículo devem existir, estar ativos e o veículo deve pertencer ao cliente;
+- A OS deve possuir pelo menos um serviço;
+- Serviços e itens de estoque devem existir, estar ativos e não podem ser repetidos;
+- Quando o valor unitário não é informado, é utilizado o preço cadastrado do serviço ou do item de estoque;
+- Os itens mantêm o snapshot de nome e descrição do momento da abertura.
+
+O orçamento, seus itens e a Ordem de Serviço são gravados em uma única transação. A resposta retorna a identificação da OS criada, a do orçamento vinculado e, assim como na aprovação, os itens com estoque insuficiente.
 
 ### Execução dos serviços
 
@@ -592,6 +609,18 @@ Entre os repositórios utilizados estão os responsáveis por:
 - Ordens de Serviço;
 - Usuários.
 
+### Transações e Unit of Work
+
+Operações que gravam mais de um agregado precisam ser atômicas. Na aprovação de um orçamento e na abertura direta de uma Ordem de Serviço, por exemplo, o orçamento e a OS devem ser gravados juntos ou não ser gravados.
+
+Para isso, a camada Application define o contrato `IUnitOfWork`. Os serviços delimitam o trecho transacional com `ExecutarEmTransacaoAsync`, sem depender do Dapper ou do PostgreSQL.
+
+A implementação fica em `Infrastructure/Database/DbSession`, registrada com escopo por requisição:
+
+- Dentro de uma transação, os repositórios participantes (`OrcamentoRepository` e `OrdemServicoRepository`) compartilham a mesma conexão e transação, e todas as gravações são confirmadas ou desfeitas juntas;
+- Fora de uma transação, cada operação abre a própria conexão, mantendo o comportamento dos demais fluxos;
+- Repositórios que precisam de transação local, como a gravação dos itens do orçamento, passam a participar da transação da Unit of Work quando ela está ativa, em vez de abrir uma transação própria.
+
 ### Consultas SQL
 
 As consultas utilizadas pelos repositórios são mantidas em arquivos `.sql` separados. Essa organização evita concentrar grandes consultas diretamente nas classes C# e facilita:
@@ -783,6 +812,8 @@ Responsável pelo fluxo de elaboração, envio e decisão sobre os orçamentos.
 | `GET` | `/api/Orcamentos` | Lista os orçamentos | JWT |
 | `GET` | `/api/Orcamentos/{id}` | Consulta os detalhes de um orçamento | Conforme operação |
 | `GET` | `/api/Orcamentos/cliente/{clienteId}` | Consulta os orçamentos de um cliente | Conforme operação |
+| `GET` | `/api/Orcamentos/pendentes` | Lista os orçamentos pendentes: aguardando cliente e, em seguida, em elaboração (mais antigos primeiro) | JWT |
+| `GET` | `/api/Orcamentos/status/{status}` | Lista os orçamentos do status informado (ex.: `Aprovado`), mais antigos primeiro | JWT |
 | `POST` | `/api/Orcamentos` | Cria um orçamento | JWT |
 | `POST` | `/api/Orcamentos/{id}/itens` | Adiciona um item ao orçamento | JWT |
 | `DELETE` | `/api/Orcamentos/{id}/itens/{itemId}` | Remove um item do orçamento | JWT |
@@ -803,7 +834,10 @@ Responsável pelo acompanhamento da execução dos serviços após a aprovação
 | Método | Endpoint | Descrição | Autenticação |
 | --- | --- | --- | --- |
 | `GET` | `/api/OrdensServico` | Lista as Ordens de Serviço | JWT |
+| `POST` | `/api/OrdensServico` | Abre uma Ordem de Serviço informando cliente, veículo, serviços e peças | JWT |
 | `GET` | `/api/OrdensServico/{id}` | Consulta uma Ordem de Serviço | Conforme operação |
+| `GET` | `/api/OrdensServico/{id}/status` | Consulta o status atual de uma Ordem de Serviço | JWT |
+| `GET` | `/api/OrdensServico/em-andamento` | Lista as Ordens de Serviço em andamento: em execução e, em seguida, aguardando execução (mais antigas primeiro) | JWT |
 | `GET` | `/api/OrdensServico/placa/{placa}` | Consulta a OS atual de um veículo pela placa | Conforme operação |
 | `GET` | `/api/OrdensServico/tempos` | Consulta informações de tempo das Ordens de Serviço | JWT |
 
@@ -1000,6 +1034,8 @@ Eles validam comportamentos como:
 - Controle de estoque;
 - Execução e finalização de serviços;
 - Comportamento das Ordens de Serviço;
+- Abertura direta da Ordem de Serviço;
+- Confirmação e reversão das transações da Unit of Work;
 - Casos de uso da camada Application;
 - Tratamento de cenários inválidos e exceções esperadas.
 

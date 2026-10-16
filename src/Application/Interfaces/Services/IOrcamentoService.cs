@@ -11,6 +11,10 @@ public interface IOrcamentoService
 
     Task<IEnumerable<OrcamentoDto>> ObterPorClienteIdAsync(Guid clienteId);
 
+    Task<IEnumerable<OrcamentoDto>> ObterPendentesAsync();
+
+    Task<IEnumerable<OrcamentoDto>> ObterPorStatusAsync(StatusOrcamento status);
+
     Task<OrcamentoDto> CriarAsync(CriarOrcamentoDto dto);
 
     Task AdicionarItemAsync(

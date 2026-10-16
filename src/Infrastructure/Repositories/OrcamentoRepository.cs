@@ -1,4 +1,3 @@
-using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Dapper;
 using Domain.Entities;
@@ -8,19 +7,21 @@ using Infrastructure.Mappers;
 namespace Infrastructure.Repositories;
 
 public class OrcamentoRepository(
-    IDbConnectionFactory connectionFactory,
+    DbSession dbSession,
     SqlFileReader sqlFileReader) : IOrcamentoRepository
 {
-    private readonly IDbConnectionFactory _connectionFactory =
-        connectionFactory;
+    private readonly DbSession _dbSession =
+        dbSession;
 
     private readonly SqlFileReader _sqlFileReader =
         sqlFileReader;
 
     public async Task<Orcamento?> ObterPorIdAsync(Guid id)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get("Orcamento/ObterPorId.sql");
@@ -28,7 +29,8 @@ public class OrcamentoRepository(
         using var multi =
             await connection.QueryMultipleAsync(
                 sql,
-                new { Id = id });
+                new { Id = id },
+                conexao.Transaction);
 
         var model =
             await multi.ReadSingleOrDefaultAsync<OrcamentoDbModel>();
@@ -46,14 +48,18 @@ public class OrcamentoRepository(
 
     public async Task<IEnumerable<Orcamento>> ObterTodosAsync()
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get("Orcamento/ObterTodos.sql");
 
         using var multi =
-            await connection.QueryMultipleAsync(sql);
+            await connection.QueryMultipleAsync(
+                sql,
+                transaction: conexao.Transaction);
 
         var orcamentos =
             (await multi.ReadAsync<OrcamentoDbModel>()).ToList();
@@ -75,8 +81,10 @@ public class OrcamentoRepository(
     public async Task<IEnumerable<Orcamento>> ObterPorClienteIdAsync(
         Guid clienteId)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get("Orcamento/ObterPorClienteId.sql");
@@ -84,47 +92,54 @@ public class OrcamentoRepository(
         var models =
             await connection.QueryAsync<OrcamentoDbModel>(
                 sql,
-                new { ClienteId = clienteId });
+                new { ClienteId = clienteId },
+                conexao.Transaction);
 
         return models.Select(x => x.ToEntity());
     }
 
     public async Task AdicionarAsync(Orcamento orcamento)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get("Orcamento/Adicionar.sql");
 
         await connection.ExecuteAsync(
             sql,
-            MapearParametros(orcamento));
+            MapearParametros(orcamento),
+            conexao.Transaction);
     }
 
     public async Task AtualizarAsync(Orcamento orcamento)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get("Orcamento/Atualizar.sql");
 
         await connection.ExecuteAsync(
             sql,
-            MapearParametros(orcamento));
+            MapearParametros(orcamento),
+            conexao.Transaction);
     }
 
     public async Task AtualizarItensAsync(
     Orcamento orcamento)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
 
-        connection.Open();
+        var connection = conexao.Connection;
 
-        using var transaction =
-            connection.BeginTransaction();
+        var transaction =
+            conexao.IniciarTransacao();
 
         try
         {
@@ -220,11 +235,11 @@ public class OrcamentoRepository(
                 }
             }
 
-            transaction.Commit();
+            conexao.Confirmar();
         }
         catch
         {
-            transaction.Rollback();
+            conexao.Desfazer();
             throw;
         }
     }

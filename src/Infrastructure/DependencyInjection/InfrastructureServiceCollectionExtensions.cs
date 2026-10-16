@@ -22,6 +22,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<SqlFileReader>();
 
+        services.AddScoped<DbSession>();
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<DbSession>());
+
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();

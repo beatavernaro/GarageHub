@@ -32,6 +32,22 @@ public class OrdensServicoController(
         return Ok(ordens);
     }
 
+    [HttpGet("em-andamento")]
+    [EndpointSummary("Obtém as ordens de serviço em andamento")]
+    [EndpointDescription(
+        "Retorna as ordens de serviço ordenadas por status: em execução e, em seguida, aguardando execução. Dentro de cada status, as mais antigas aparecem primeiro. Ordens finalizadas e entregues não são retornadas.")]
+    [ProducesResponseType(
+        typeof(IEnumerable<OrdemServicoDto>),
+        StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<OrdemServicoDto>>>
+        ObterEmAndamento()
+    {
+        var ordens =
+            await _ordemServicoService.ObterEmAndamentoAsync();
+
+        return Ok(ordens);
+    }
+
     [HttpGet("{id:guid}")]
     [EndpointSummary("Obtém uma ordem de serviço pelo ID")]
     [EndpointDescription(
@@ -51,6 +67,48 @@ public class OrdensServicoController(
             return NotFound();
 
         return Ok(ordemServico);
+    }
+
+    [HttpGet("{id:guid}/status")]
+    [EndpointSummary("Obtém o status de uma ordem de serviço")]
+    [EndpointDescription(
+        "Retorna o status atual da ordem de serviço informada.")]
+    [ProducesResponseType(
+        typeof(StatusOrdemServicoDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StatusOrdemServicoDto>>
+        ObterStatus([FromRoute] Guid id)
+    {
+        var status =
+            await _ordemServicoService.ObterStatusAsync(id);
+
+        if (status is null)
+            return NotFound();
+
+        return Ok(status);
+    }
+
+    [HttpPost]
+    [EndpointSummary("Abre uma ordem de serviço")]
+    [EndpointDescription(
+        "Abre uma ordem de serviço informando cliente, veículo, serviços e peças. Gera automaticamente o orçamento aprovado vinculado e verifica se existe estoque suficiente.")]
+    [ProducesResponseType(
+        typeof(AberturaOrdemServicoDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<AberturaOrdemServicoDto>> Abrir(
+        [FromBody] AbrirOrdemServicoDto dto)
+    {
+        var resultado =
+            await _ordemServicoService.AbrirAsync(dto);
+
+        return CreatedAtAction(
+            nameof(ObterPorId),
+            new { id = resultado.OrdemServicoId },
+            resultado);
     }
 
     [Authorize]

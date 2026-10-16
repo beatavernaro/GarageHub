@@ -1,5 +1,4 @@
 using Application.DTOs.OrdemServico;
-using Application.Interfaces;
 using Application.Interfaces.Repositories;
 using Dapper;
 using Domain.Entities;
@@ -10,20 +9,22 @@ using Infrastructure.Mappers;
 namespace Infrastructure.Repositories;
 
 public class OrdemServicoRepository(
-    IDbConnectionFactory connectionFactory,
+    DbSession dbSession,
     SqlFileReader sqlFileReader)
     : IOrdemServicoRepository
 {
-    private readonly IDbConnectionFactory _connectionFactory =
-        connectionFactory;
+    private readonly DbSession _dbSession =
+        dbSession;
 
     private readonly SqlFileReader _sqlFileReader =
         sqlFileReader;
 
     public async Task<OrdemServico?> ObterPorIdAsync(Guid id)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
@@ -32,7 +33,8 @@ public class OrdemServicoRepository(
         using var multi =
             await connection.QueryMultipleAsync(
                 sql,
-                new { Id = id });
+                new { Id = id },
+                conexao.Transaction);
 
         var model =
             await multi.ReadSingleOrDefaultAsync<OrdemServicoDbModel>();
@@ -55,15 +57,19 @@ public class OrdemServicoRepository(
 
     public async Task<IEnumerable<OrdemServico>> ObterTodosAsync()
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
                 "OrdemServico/ObterTodos.sql");
 
         using var multi =
-            await connection.QueryMultipleAsync(sql);
+            await connection.QueryMultipleAsync(
+                sql,
+                transaction: conexao.Transaction);
 
         var ordens =
             (await multi.ReadAsync<OrdemServicoDbModel>())
@@ -98,8 +104,10 @@ public class OrdemServicoRepository(
     public async Task<OrdemServico?> ObterAtualPorPlacaAsync(
     string placa)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
@@ -108,7 +116,8 @@ public class OrdemServicoRepository(
         using var multi =
             await connection.QueryMultipleAsync(
                 sql,
-                new { Placa = placa });
+                new { Placa = placa },
+                conexao.Transaction);
 
         var model =
             await multi.ReadSingleOrDefaultAsync<OrdemServicoDbModel>();
@@ -127,13 +136,13 @@ public class OrdemServicoRepository(
     public async Task AdicionarAsync(
         OrdemServico ordemServico)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
 
-        connection.Open();
+        var connection = conexao.Connection;
 
-        using var transaction =
-            connection.BeginTransaction();
+        var transaction =
+            conexao.IniciarTransacao();
 
         try
         {
@@ -203,11 +212,11 @@ public class OrdemServicoRepository(
                     transaction);
             }
 
-            transaction.Commit();
+            conexao.Confirmar();
         }
         catch
         {
-            transaction.Rollback();
+            conexao.Desfazer();
             throw;
         }
     }
@@ -215,8 +224,10 @@ public class OrdemServicoRepository(
     public async Task AtualizarAsync(
         OrdemServico ordemServico)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
@@ -224,14 +235,17 @@ public class OrdemServicoRepository(
 
         await connection.ExecuteAsync(
             sql,
-            MapearParametros(ordemServico));
+            MapearParametros(ordemServico),
+            conexao.Transaction);
     }
 
     public async Task AtualizarServicoStatusAsync(
     OrdemServicoServico servico)
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
@@ -248,20 +262,25 @@ public class OrdemServicoRepository(
                 servico.DataFinalizacao,
                 servico.DataAlteracao,
                 servico.AlteradoPorId
-            });
+            },
+            conexao.Transaction);
     }
 
     public async Task<IEnumerable<TempoOrdemServicoDto>> ObterTemposOrdensAsync()
     {
-        using var connection =
-            _connectionFactory.CreateConnection();
+        using var conexao =
+            _dbSession.ObterConexao();
+
+        var connection = conexao.Connection;
 
         var sql =
             _sqlFileReader.Get(
                 "OrdemServico/ObterTemposOrdens.sql");
 
         return await connection
-            .QueryAsync<TempoOrdemServicoDto>(sql);
+            .QueryAsync<TempoOrdemServicoDto>(
+                sql,
+                transaction: conexao.Transaction);
     }
 
     private static object MapearParametros(
