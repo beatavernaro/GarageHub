@@ -1,0 +1,45 @@
+# Escalonamento automático da API por CPU e memória.
+# As porcentagens são relativas aos requests do container (api-deployment.yaml:
+# 100m de CPU e 256Mi de memória). As métricas vêm do metrics-server (infra/metrics-server.tf).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: garagehub-api
+  labels:
+    app.kubernetes.io/name: garagehub-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: garagehub-api
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    # Sobe rápido quando a carga aumenta
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    # Desce gradualmente, uma réplica a cada 30s, após 60s de carga estável
+    # (o padrão do Kubernetes é 300s; reduzido para facilitar a demonstração)
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 30

@@ -1,0 +1,16 @@
+# Service headless do PostgreSQL: dá ao pod do StatefulSet um DNS estável
+# (garagehub-db) e não expõe o banco fora do cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: garagehub-db
+  labels:
+    app.kubernetes.io/name: garagehub-db
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: garagehub-db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

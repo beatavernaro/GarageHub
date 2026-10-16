@@ -1,0 +1,35 @@
+# Ponto de entrada dos manifestos: kubectl apply -k k8s/
+#
+# Pré-requisitos (criados pelo Terraform em infra/): namespace garagehub,
+# StorageClass garagehub-db e ConfigMap garagehub-db-init.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: garagehub
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: garagehub
+
+resources:
+  - configmap.yaml
+  - postgres-service.yaml
+  - postgres-statefulset.yaml
+  - api-deployment.yaml
+  - api-service.yaml
+  - api-hpa.yaml
+
+# O Secret é gerado a partir de k8s/secrets.env, que não é versionado.
+# Crie o arquivo a partir de secrets.env.example. O sufixo de hash no nome
+# faz os pods serem recriados automaticamente quando os valores mudam.
+secretGenerator:
+  - name: garagehub-secrets
+    envs:
+      - secrets.env
+
+# Tag usada no deploy local (scripts/deploy-local.sh).
+# No CI/CD, é substituída pela tag da imagem publicada no GHCR.
+images:
+  - name: garagehub-api
+    newName: garagehub-api
+    newTag: local

@@ -1,0 +1,19 @@
+# Configurações não sensíveis da API e do banco.
+# Valores sensíveis (senha do banco e chave JWT) ficam no Secret garagehub-secrets.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: garagehub-config
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+
+  Jwt__Issuer: GarageHub.Api
+  Jwt__Audience: GarageHub.Client
+
+  DB_HOST: garagehub-db
+  DB_PORT: "5432"
+  DB_NAME: garagehub
+
+  # GC de workstation: menor consumo de memória por pod, o que torna
+  # o HPA por memória mais previsível com várias réplicas pequenas.
+  DOTNET_gcServer: "0"

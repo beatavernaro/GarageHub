@@ -1,0 +1,86 @@
+# API GarageHub.
+# O número de réplicas não é definido aqui: ele é controlado pelo HPA (api-hpa.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garagehub-api
+  labels:
+    app.kubernetes.io/name: garagehub-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garagehub-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garagehub-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: api
+          # A tag é definida em kustomization.yaml (images)
+          image: garagehub-api
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: garagehub-config
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: garagehub-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: garagehub-secrets
+                  key: POSTGRES_PASSWORD
+            - name: Jwt__Key
+              valueFrom:
+                secretKeyRef:
+                  name: garagehub-secrets
+                  key: JWT_KEY
+            # Montada a partir das variáveis acima, para que a senha
+            # exista em um único lugar (o Secret)
+            - name: ConnectionStrings__DefaultConnection
+              value: Host=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);Username=$(POSTGRES_USER);Password=$(POSTGRES_PASSWORD)
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # Timeout de 3s nas probes (padrão: 1s): sob CPU saturada, durante picos
+          # de carga, respostas mais lentas não devem tirar o pod do Service
+          # nem provocar reinícios.
+          # Pronta para receber tráfego somente quando o banco está acessível
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Não consulta o banco: uma indisponibilidade do PostgreSQL
+          # não deve provocar reinícios em cascata da API
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
