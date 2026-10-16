@@ -1,0 +1,8 @@
+# Copie para terraform.tfvars (ignorado pelo Git) para sobrescrever os padrões.
+# Nenhuma variável é obrigatória: sem este arquivo, os valores padrão são usados.
+
+# cluster_name                 = "garagehub"
+# worker_count                 = 1
+# api_node_port                = 30080
+# namespace                    = "garagehub"
+# metrics_server_chart_version = "3.14.0"
