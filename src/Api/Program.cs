@@ -1,10 +1,12 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using Api.HealthChecks;
 using Api.Security;
 using Application.Interfaces;
 using GarageHub.Api.Middleware;
 using Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -58,6 +60,11 @@ builder.Services.AddAuthentication(
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>(
+        "database",
+        tags: ["ready"]);
 
 builder.Services.AddOpenApi(options =>
 {
@@ -113,6 +120,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Liveness: indica apenas que o processo está respondendo (não consulta o banco)
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+// Readiness: indica que a API está pronta para receber tráfego (banco acessível)
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 await app.RunAsync();
 

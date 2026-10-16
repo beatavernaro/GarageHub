@@ -1,8 +1,21 @@
 **/bin/
 **/obj/
+**/TestResults/
 .git/
+.github/
 .vs/
 .vscode/
 *.user
 *.suo
 README.md
+.env
+.env.*
+
+# Conteúdo que não faz parte da imagem da API
+tests/
+Documentacao/
+coverage-report/
+ApiDoc.json
+k8s/
+infra/
+scripts/

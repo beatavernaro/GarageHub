@@ -77,6 +77,19 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Kubernetes secrets (gerados a partir de k8s/secrets.env.example)
+k8s/secrets.env
+
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+infra/*.tfvars
+!infra/*.tfvars.example
+infra/kubeconfig*
+infra/*-config
+infra/tfplan
+
 # Local database files
 *.db
 *.db-shm
