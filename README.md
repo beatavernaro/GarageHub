@@ -1024,6 +1024,21 @@ http://localhost:8080/swagger
 
 A documentação apresenta as rotas disponíveis, parâmetros, modelos de entrada e saída, códigos de resposta e informações sobre autenticação.
 
+### Especificação OpenAPI
+
+A especificação completa dos endpoints está versionada em [`docs/openapi.json`](docs/openapi.json) (OpenAPI 3.1). O arquivo pode ser consultado sem subir a aplicação e importado em ferramentas como:
+
+- **Postman:** *Import* → selecione `docs/openapi.json`. É gerada uma coleção com todos os endpoints, agrupados por recurso, e com a autenticação Bearer;
+- **Swagger Editor:** em [editor.swagger.io](https://editor.swagger.io), *File* → *Import file*.
+
+O servidor definido no arquivo é `http://localhost:8080`, o endereço do Docker Compose. Para usar o Kubernetes local, troque para `http://localhost:30080`.
+
+A especificação é gerada pela própria API (`Microsoft.AspNetCore.OpenApi`) e servida em `/openapi/v1.json`, o mesmo endereço lido pelo Swagger UI. Para atualizar o arquivo depois de alterar os endpoints, com a API em execução:
+
+```bash
+curl -s http://localhost:8080/openapi/v1.json | PYTHONUTF8=1 python3 -m json.tool --no-ensure-ascii > docs/openapi.json
+```
+
 ### Clientes
 
 Responsável pelo gerenciamento dos clientes da oficina.
