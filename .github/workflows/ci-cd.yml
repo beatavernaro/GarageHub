@@ -1,6 +1,6 @@
 name: CI/CD
 
-# Pull requests: build, testes e validação do Dockerfile (sem publicar nem implantar).
+# Pull requests: build, testes, análise no SonarQube Cloud e validação do Dockerfile (sem publicar nem implantar).
 # Push na main / execução manual: build e testes -> publicação da imagem no GHCR ->
 # deploy em um cluster Kubernetes efêmero (kind) criado no runner pelo Terraform de infra/.
 on:
@@ -45,9 +45,18 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+    # A análise do SonarQube Cloud usa o mesmo build e a mesma execução de testes.
+    # Suas etapas são opcionais: uma falha, lentidão ou ausência do SONAR_TOKEN
+    # não reprova o pipeline nem impede a publicação da imagem e o deploy.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Histórico completo, usado pelo SonarQube para identificar o código novo
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
@@ -69,14 +78,49 @@ jobs:
               psql -U postgres -d garagehub -v ON_ERROR_STOP=1 -q < "${script}"
           done
 
+      - name: SonarQube - configurar Java
+        if: env.SONAR_TOKEN != ''
+        continue-on-error: true
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: SonarQube - iniciar análise
+        id: sonar-begin
+        if: env.SONAR_TOKEN != ''
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet sonarscanner begin \
+            /k:"beatavernaro_GarageHub" \
+            /o:"beatavernaro" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.cs.opencover.reportsPaths="tests/Tests/TestResults/coverage.opencover.xml" \
+            /d:sonar.coverage.exclusions="src/Api/**,src/Infrastructure/**,src/Application/DTOs/**,src/Application/Interfaces/**,src/Domain/Enums/**,src/Domain/Exceptions/**"
+
       - name: Restore
         run: dotnet restore
 
       - name: Build
         run: dotnet build --no-restore -c Release
 
+      # A cobertura (cobertura e opencover) é gerada pelo coverlet configurado em Tests.csproj
       - name: Testes unitários e de integração
         run: dotnet test tests/Tests/Tests.csproj --no-build -c Release
+
+      # Só executa se a análise foi iniciada com sucesso
+      - name: SonarQube - enviar análise
+        id: sonar-end
+        if: steps.sonar-begin.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 10
+        run: dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+
+      - name: SonarQube - aviso
+        if: env.SONAR_TOKEN == '' || steps.sonar-begin.outcome == 'failure' || steps.sonar-end.outcome == 'failure'
+        run: echo "::warning title=SonarQube::Análise do SonarQube não concluída (SONAR_TOKEN ausente, falha ou timeout). O pipeline continua normalmente."
 
   image:
     name: Imagem Docker

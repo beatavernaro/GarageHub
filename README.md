@@ -639,8 +639,7 @@ A estrutura principal do GarageHub é:
 GarageHub/
 ├── .github/
 │   └── workflows/
-│       ├── ci-cd.yml        # Build, testes, imagem (GHCR) e deploy no Kubernetes
-│       └── sonar.yml        # Testes com cobertura e análise no SonarQube Cloud
+│       └── ci-cd.yml        # Build, testes, análise SonarQube, imagem (GHCR) e deploy no Kubernetes
 │
 ├── infra/                   # Terraform: cluster kind, metrics-server e infraestrutura do banco
 ├── k8s/                     # Manifestos Kubernetes (kustomize)
@@ -1785,12 +1784,13 @@ O **Quality Gate aprovado** indica que os critérios de qualidade configurados p
 
 ## 🔄 CI/CD com GitHub Actions
 
-O projeto possui dois workflows:
+O projeto possui um único workflow:
 
 | Workflow | Arquivo | Gatilhos | Responsabilidade |
 | --- | --- | --- | --- |
-| CI/CD | `.github/workflows/ci-cd.yml` | Push na `main`, pull requests e execução manual | Build, testes, imagem Docker e deploy em Kubernetes |
-| SonarQube | `.github/workflows/sonar.yml` | Push na `main` e pull requests | Testes com cobertura e análise no SonarQube Cloud |
+| CI/CD | `.github/workflows/ci-cd.yml` | Push na `main`, pull requests e execução manual | Build, testes com cobertura, análise no SonarQube Cloud, imagem Docker e deploy em Kubernetes |
+
+A análise do SonarQube aproveita o build e a execução de testes do job `build-test`, então o projeto é compilado e testado uma única vez por commit.
 
 ### Estratégia de deploy
 
@@ -1805,7 +1805,7 @@ flowchart LR
     pr["Pull request"] --> bt
     push["Push na main<br/>ou execução manual"] --> bt
 
-    bt["build-test<br/>PostgreSQL 18 · schema e seed<br/>restore · build · testes"]
+    bt["build-test<br/>PostgreSQL 18 · schema e seed<br/>restore · build · testes<br/>análise SonarQube (opcional)"]
     bt --> img["image<br/>docker build com cache"]
 
     img -- "pull request:<br/>apenas valida o Dockerfile" --> fim(["fim"])
@@ -1830,7 +1830,7 @@ flowchart LR
 
 | Job | Executa em | Etapas |
 | --- | --- | --- |
-| `build-test` | Todos os eventos | PostgreSQL 18 como serviço, execução do schema e do seed, restore, build e testes unitários e de integração (com cobertura mínima de 80%) |
+| `build-test` | Todos os eventos | PostgreSQL 18 como serviço, execução do schema e do seed, restore, build, testes unitários e de integração (com cobertura mínima de 80%) e envio da análise ao SonarQube Cloud |
 | `image` | Todos os eventos | Build da imagem com cache. Em pull requests, apenas valida o Dockerfile. Na `main`, publica no GHCR com as tags `sha-<commit>` e `latest` |
 | `deploy` | Push na `main` e execução manual | `terraform apply` (cluster kind no runner), carga da imagem publicada, geração do Secret a partir dos GitHub Secrets, `kubectl apply -k`, aguardo do rollout, smoke test, demonstração do HPA e `terraform destroy` |
 
@@ -1846,7 +1846,7 @@ Secrets do repositório (**Settings → Secrets and variables → Actions**):
 | --- | --- |
 | `POSTGRES_PASSWORD` | Senha do PostgreSQL no cluster efêmero |
 | `JWT_KEY` | Chave de assinatura dos tokens JWT (mínimo de 32 caracteres) |
-| `SONAR_TOKEN` | Token do SonarQube Cloud, utilizado pelo `sonar.yml` |
+| `SONAR_TOKEN` | Token do SonarQube Cloud, utilizado pela análise do job `build-test`. Opcional: sem ele, a análise é ignorada |
 
 A publicação no GHCR utiliza o `GITHUB_TOKEN` gerado automaticamente pelo GitHub Actions, sem necessidade de configurar credenciais.
 
@@ -1861,19 +1861,28 @@ A tag `sha-<commit>` identifica exatamente o código que gerou a imagem e é a u
 
 ### Banco de dados no CI
 
-Como os testes de integração dependem do PostgreSQL, os workflows inicializam uma instância isolada do banco durante sua execução e executam os scripts `01-schema.sql` e `02-seed.sql` antes dos testes.
+Como os testes de integração dependem do PostgreSQL, o workflow inicializa uma instância isolada do banco durante sua execução e executam os scripts `01-schema.sql` e `02-seed.sql` antes dos testes.
 
 Isso permite que os testes de integração sejam executados em um ambiente novo e reproduzível, sem depender do banco de dados utilizado durante o desenvolvimento local.
 
-### Workflow do SonarQube
+### Análise do SonarQube
 
-O `sonar.yml` executa os testes com geração de cobertura e envia a análise ao SonarQube Cloud:
+A análise faz parte do job `build-test` e reutiliza o mesmo build e a mesma execução dos testes, com a cobertura gerada pelo coverlet:
 
 ```text
-Checkout do código → Configuração do .NET e do Java → Inicialização do PostgreSQL
-→ Criação do schema e execução do seed → Início da análise SonarQube → Restore → Build
-→ Testes unitários e de integração com cobertura → Envio da análise ao SonarQube Cloud
+Checkout do código (histórico completo) → Configuração do .NET → Inicialização do PostgreSQL
+→ Criação do schema e execução do seed → Configuração do Java → Início da análise SonarQube
+→ Restore → Build → Testes unitários e de integração com cobertura → Envio da análise ao SonarQube Cloud
 ```
+
+As etapas do SonarQube são **opcionais** e não interrompem o pipeline:
+
+- utilizam `continue-on-error`, então uma falha na análise não reprova o job nem impede a publicação da imagem e o deploy;
+- têm limite de tempo (5 minutos para iniciar e 10 para enviar a análise), para que uma lentidão do serviço não trave o pipeline;
+- são ignoradas quando o secret `SONAR_TOKEN` não está configurado;
+- quando a análise não é concluída, a etapa **SonarQube - aviso** registra um alerta no resumo da execução.
+
+O build e os testes continuam obrigatórios: se falharem, o pipeline é interrompido normalmente.
 
 ## 🩺 Solução de problemas
 
