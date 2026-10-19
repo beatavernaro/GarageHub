@@ -914,6 +914,7 @@ Responsável pelo cadastro e gerenciamento dos veículos associados aos clientes
 | `GET` | `/api/Veiculos` | Lista os veículos | JWT |
 | `GET` | `/api/Veiculos/{id}` | Consulta um veículo pelo ID | JWT |
 | `GET` | `/api/Veiculos/placa/{placa}` | Consulta um veículo pela placa | JWT |
+| `GET` | `/api/Veiculos/cliente/{clienteId}` | Lista os veículos de um cliente | JWT |
 | `POST` | `/api/Veiculos` | Cadastra um veículo | JWT |
 | `PUT` | `/api/Veiculos/{id}` | Atualiza os dados do veículo | JWT |
 | `PATCH` | `/api/Veiculos/{id}/inativar` | Inativa um veículo | JWT |
@@ -957,8 +958,8 @@ Responsável pelo fluxo de elaboração, envio e decisão sobre os orçamentos.
 | Método | Endpoint | Descrição | Autenticação |
 | --- | --- | --- | --- |
 | `GET` | `/api/Orcamentos` | Lista os orçamentos | JWT |
-| `GET` | `/api/Orcamentos/{id}` | Consulta os detalhes de um orçamento | Conforme operação |
-| `GET` | `/api/Orcamentos/cliente/{clienteId}` | Consulta os orçamentos de um cliente | Conforme operação |
+| `GET` | `/api/Orcamentos/{id}` | Consulta os detalhes de um orçamento | JWT |
+| `GET` | `/api/Orcamentos/cliente/{clienteId}` | Consulta os orçamentos de um cliente | JWT |
 | `GET` | `/api/Orcamentos/pendentes` | Lista os orçamentos pendentes: aguardando cliente e, em seguida, em elaboração (mais antigos primeiro) | JWT |
 | `GET` | `/api/Orcamentos/status/{status}` | Lista os orçamentos do status informado (ex.: `Aprovado`), mais antigos primeiro | JWT |
 | `POST` | `/api/Orcamentos` | Cria um orçamento | JWT |
@@ -967,9 +968,10 @@ Responsável pelo fluxo de elaboração, envio e decisão sobre os orçamentos.
 | `PATCH` | `/api/Orcamentos/{id}/itens/{itemId}/quantidade` | Altera a quantidade de um item | JWT |
 | `PATCH` | `/api/Orcamentos/{id}/itens/{itemId}/valor` | Altera o valor unitário de um item | JWT |
 | `PATCH` | `/api/Orcamentos/{id}/desconto` | Aplica desconto ao orçamento | JWT |
+| `PATCH` | `/api/Orcamentos/{id}/status` | Altera o status do orçamento (envio para o cliente ou cancelamento) | JWT |
 | `POST` | `/api/Orcamentos/{id}/aguardando-cliente` | Envia o orçamento para decisão do cliente | JWT |
-| `POST` | `/api/Orcamentos/{id}/aprovar` | Aprova o orçamento | Acesso do cliente |
-| `POST` | `/api/Orcamentos/{id}/rejeitar` | Rejeita o orçamento | Acesso do cliente |
+| `POST` | `/api/Orcamentos/{id}/aprovar` | Aprova o orçamento | Não |
+| `POST` | `/api/Orcamentos/{id}/rejeitar` | Rejeita o orçamento | Não |
 | `POST` | `/api/Orcamentos/{id}/cancelar` | Cancela o orçamento | JWT |
 
 A aprovação do orçamento gera automaticamente a Ordem de Serviço correspondente.
@@ -982,11 +984,13 @@ Responsável pelo acompanhamento da execução dos serviços após a aprovação
 | --- | --- | --- | --- |
 | `GET` | `/api/OrdensServico` | Lista as Ordens de Serviço | JWT |
 | `POST` | `/api/OrdensServico` | Abre uma Ordem de Serviço informando cliente, veículo, serviços e peças | JWT |
-| `GET` | `/api/OrdensServico/{id}` | Consulta uma Ordem de Serviço | Conforme operação |
+| `GET` | `/api/OrdensServico/{id}` | Consulta uma Ordem de Serviço | JWT |
 | `GET` | `/api/OrdensServico/{id}/status` | Consulta o status atual de uma Ordem de Serviço | JWT |
 | `GET` | `/api/OrdensServico/em-andamento` | Lista as Ordens de Serviço em andamento: em execução e, em seguida, aguardando execução (mais antigas primeiro) | JWT |
-| `GET` | `/api/OrdensServico/placa/{placa}` | Consulta a OS atual de um veículo pela placa | Conforme operação |
-| `GET` | `/api/OrdensServico/tempos` | Consulta informações de tempo das Ordens de Serviço | JWT |
+| `GET` | `/api/OrdensServico/acompanhamento/{placa}` | Acompanha a OS mais recente de um veículo pela placa | Não |
+| `PATCH` | `/api/OrdensServico/{id}/servicos/{ordemServicoServicoId}/status` | Altera o status de um serviço da OS e recalcula o status da OS | JWT |
+| `POST` | `/api/OrdensServico/{id}/entregar` | Marca uma OS finalizada como entregue | JWT |
+| `GET` | `/api/OrdensServico/tempo-medio` | Consulta o tempo médio das OS finalizadas e o tempo de execução de cada uma | JWT |
 
 A Ordem de Serviço também disponibiliza operações responsáveis pela evolução dos serviços durante a execução, respeitando as transições de estado definidas pelo domínio.
 
@@ -999,6 +1003,24 @@ A autenticação administrativa é realizada pelo endpoint:
 | `POST` | `/api/Auth/login` | Autentica o usuário e retorna um token JWT | Não |
 
 O token retornado deve ser utilizado nas operações administrativas protegidas.
+
+### Health checks
+
+A API disponibiliza dois endpoints de verificação de saúde, que não exigem autenticação:
+
+| Método | Endpoint | Descrição | Autenticação |
+| --- | --- | --- | --- |
+| `GET` | `/health/live` | Liveness: indica que a API está em execução e respondendo | Não |
+| `GET` | `/health/ready` | Readiness: indica que a API está pronta para receber requisições, com o banco de dados acessível | Não |
+
+Os dois retornam `Healthy` quando a verificação é bem-sucedida.
+
+```text
+Docker Compose:    http://localhost:8080/health/live
+                   http://localhost:8080/health/ready
+Kubernetes local:  http://localhost:30080/health/live
+                   http://localhost:30080/health/ready
+```
 
 ### Códigos HTTP
 

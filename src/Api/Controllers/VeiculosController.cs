@@ -14,6 +14,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     private readonly IVeiculoService _veiculoService = veiculoService;
 
     [HttpGet]
+    [EndpointSummary("Lista os veículos")]
+    [EndpointDescription("Retorna todos os veículos ativos cadastrados.")]
     [ProducesResponseType(typeof(IEnumerable<VeiculoDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<VeiculoDto>>> ObterTodos()
     {
@@ -23,6 +25,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [EndpointSummary("Obtém um veículo pelo ID")]
+    [EndpointDescription("Retorna os dados de um veículo cadastrado.")]
     [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VeiculoDto>> ObterPorId(Guid id)
@@ -36,6 +40,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpGet("placa/{placa}")]
+    [EndpointSummary("Obtém um veículo pela placa")]
+    [EndpointDescription("Retorna os dados do veículo cadastrado com a placa informada.")]
     [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VeiculoDto>> ObterPorPlaca(string placa)
@@ -49,6 +55,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpGet("cliente/{clienteId:guid}")]
+    [EndpointSummary("Lista os veículos de um cliente")]
+    [EndpointDescription("Retorna os veículos vinculados ao cliente informado.")]
     [ProducesResponseType(typeof(IEnumerable<VeiculoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<VeiculoDto>>> ObterPorClienteId(Guid clienteId)
@@ -59,6 +67,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpPost]
+    [EndpointSummary("Cadastra um veículo")]
+    [EndpointDescription("Cadastra um veículo vinculado a um cliente.")]
     [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<VeiculoDto>> Criar([FromBody] CriarVeiculoDto dto)
@@ -72,6 +82,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [EndpointSummary("Atualiza um veículo")]
+    [EndpointDescription("Atualiza os dados do veículo, incluindo o cliente ao qual está vinculado.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,6 +95,8 @@ public class VeiculosController(IVeiculoService veiculoService) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/inativar")]
+    [EndpointSummary("Inativa um veículo")]
+    [EndpointDescription("Inativa o veículo, que deixa de ser listado entre os veículos ativos.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Inativar(Guid id)

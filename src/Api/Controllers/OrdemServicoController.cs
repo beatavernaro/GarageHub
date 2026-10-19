@@ -111,7 +111,7 @@ public class OrdensServicoController(
             resultado);
     }
 
-    [Authorize]
+    [AllowAnonymous]
     [HttpGet("acompanhamento/{placa}")]
     [EndpointSummary(
     "Acompanha a ordem de serviço pela placa")]

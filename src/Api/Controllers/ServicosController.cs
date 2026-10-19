@@ -40,7 +40,7 @@ public class ServicosController(
         return Ok(servico);
     }
 
-    [HttpGet($"codigoInterno/{{codigoInterno}}")]
+    [HttpGet("codigo/{codigoInterno}")]
     [EndpointSummary("Obtém um serviço pelo código interno")]
     [EndpointDescription(
         "Retorna os dados de um serviço cadastrado com o código interno informado.")]
