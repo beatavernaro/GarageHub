@@ -81,7 +81,7 @@ jobs:
       - name: SonarQube - configurar Java
         if: env.SONAR_TOKEN != ''
         continue-on-error: true
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'zulu'
