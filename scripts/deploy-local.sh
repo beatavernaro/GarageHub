@@ -50,6 +50,9 @@ fi
 echo "==> Aguardando o PostgreSQL"
 "${KUBECTL[@]}" rollout status statefulset/garagehub-db --timeout=300s
 
+echo "==> Aguardando o Mailpit"
+"${KUBECTL[@]}" rollout status deployment/garagehub-mailpit --timeout=300s
+
 echo "==> Aguardando a API"
 "${KUBECTL[@]}" rollout status deployment/garagehub-api --timeout=300s
 
@@ -57,3 +60,5 @@ echo "==> Aguardando a API"
 
 echo
 echo "API disponível em http://localhost:30080 (Swagger: http://localhost:30080/swagger)"
+echo "Mailpit (e-mails enviados): kubectl --context kind-${CLUSTER_NAME} -n ${NAMESPACE} port-forward svc/garagehub-mailpit 8025:8025"
+echo "  e acesse http://localhost:8025"

@@ -213,9 +213,10 @@ jobs:
       - name: Aplicar manifestos (kubectl apply -k)
         run: kubectl apply -k k8s
 
-      - name: Aguardar rollout do banco e da API
+      - name: Aguardar rollout do banco, do Mailpit e da API
         run: |
           kubectl -n "${NAMESPACE}" rollout status statefulset/garagehub-db --timeout=300s
+          kubectl -n "${NAMESPACE}" rollout status deployment/garagehub-mailpit --timeout=300s
           kubectl -n "${NAMESPACE}" rollout status deployment/garagehub-api --timeout=300s
           kubectl -n "${NAMESPACE}" get pods,services,hpa
 

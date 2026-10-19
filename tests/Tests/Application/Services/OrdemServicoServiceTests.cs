@@ -1,11 +1,13 @@
 using Application.DTOs.OrdemServico;
 using Application.Interfaces;
+using Application.Interfaces.Notifications;
 using Application.Interfaces.Repositories;
 using Application.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace GarageHub.Tests.Application.Services;
@@ -20,6 +22,8 @@ public class OrdemServicoServiceTests
     private readonly Mock<IItemEstoqueRepository> _itemEstoqueRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
+    private readonly Mock<IEmailSender> _emailSenderMock;
+    private readonly Mock<ILogger<OrdemServicoService>> _loggerMock;
 
     private readonly OrdemServicoService _service;
 
@@ -62,6 +66,12 @@ public class OrdemServicoServiceTests
             .Setup(x => x.Id)
             .Returns(_usuarioId);
 
+        _emailSenderMock =
+            new Mock<IEmailSender>();
+
+        _loggerMock =
+            new Mock<ILogger<OrdemServicoService>>();
+
         _service = new OrdemServicoService(
             _ordemServicoRepositoryMock.Object,
             _orcamentoRepositoryMock.Object,
@@ -70,7 +80,9 @@ public class OrdemServicoServiceTests
             _servicoRepositoryMock.Object,
             _itemEstoqueRepositoryMock.Object,
             _unitOfWorkMock.Object,
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            _emailSenderMock.Object,
+            _loggerMock.Object);
     }
 
     [Fact]
@@ -646,6 +658,233 @@ public class OrdemServicoServiceTests
             .ThrowAsync<DomainException>()
             .WithMessage(
                 "A ordem de serviço não está finalizada.");
+    }
+
+    [Fact]
+    public async Task AlterarStatusServicoAsync_Deve_Notificar_Cliente_Quando_Status_Da_Ordem_Mudar()
+    {
+        var cliente = CriarCliente();
+
+        var ordem =
+            CriarOrdemComServico(cliente.Id);
+
+        var servico =
+            ordem.Servicos.Single();
+
+        ConfigurarOrdemECliente(ordem, cliente);
+
+        await _service.AlterarStatusServicoAsync(
+            ordem.Id,
+            servico.Id,
+            StatusServico.EmExecucao);
+
+        _emailSenderMock.Verify(
+            x => x.EnviarAsync(
+                cliente.Email,
+                It.Is<string>(assunto =>
+                    assunto.Contains(ordem.Id.ToString()) &&
+                    assunto.Contains("Em execução")),
+                It.Is<string>(corpo =>
+                    corpo.Contains(ordem.Id.ToString()) &&
+                    corpo.Contains(cliente.Nome) &&
+                    corpo.Contains("Novo status: Em execução"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AlterarStatusServicoAsync_Nao_Deve_Notificar_Quando_Status_Da_Ordem_Nao_Mudar()
+    {
+        var cliente = CriarCliente();
+
+        var ordemId = Guid.NewGuid();
+
+        var servicoEmExecucao =
+            new OrdemServicoServico(
+                ordemId,
+                Guid.NewGuid(),
+                "Troca de Óleo",
+                "Troca completa",
+                1,
+                100m,
+                Guid.NewGuid());
+
+        var servicoAguardando =
+            new OrdemServicoServico(
+                ordemId,
+                Guid.NewGuid(),
+                "Alinhamento",
+                "Alinhamento completo",
+                1,
+                80m,
+                Guid.NewGuid());
+
+        var ordem =
+            new OrdemServico(
+                ordemId,
+                Guid.NewGuid(),
+                cliente.Id,
+                Guid.NewGuid(),
+                0m,
+                180m,
+                [],
+                [servicoEmExecucao, servicoAguardando],
+                Guid.NewGuid());
+
+        servicoEmExecucao.AlterarStatus(
+            StatusServico.EmExecucao,
+            _usuarioId);
+
+        ordem.AtualizarStatus(_usuarioId);
+
+        ConfigurarOrdemECliente(ordem, cliente);
+
+        // A OS já está em execução: iniciar outro serviço não altera o status dela
+        await _service.AlterarStatusServicoAsync(
+            ordem.Id,
+            servicoAguardando.Id,
+            StatusServico.EmExecucao);
+
+        ordem.Status.Should()
+            .Be(StatusOrdemServico.EmExecucao);
+
+        _emailSenderMock.Verify(
+            x => x.EnviarAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task EntregarAsync_Deve_Notificar_Cliente_Com_Status_Entregue()
+    {
+        var cliente = CriarCliente();
+
+        var ordem =
+            CriarOrdemFinalizada(cliente.Id);
+
+        ConfigurarOrdemECliente(ordem, cliente);
+
+        await _service.EntregarAsync(ordem.Id);
+
+        _emailSenderMock.Verify(
+            x => x.EnviarAsync(
+                cliente.Email,
+                It.Is<string>(assunto =>
+                    assunto.Contains("Entregue")),
+                It.Is<string>(corpo =>
+                    corpo.Contains(ordem.Id.ToString()) &&
+                    corpo.Contains(cliente.Nome) &&
+                    corpo.Contains("Novo status: Entregue"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EntregarAsync_Deve_Atualizar_Ordem_E_Registrar_Log_Quando_Envio_Falhar()
+    {
+        var cliente = CriarCliente();
+
+        var ordem =
+            CriarOrdemFinalizada(cliente.Id);
+
+        ConfigurarOrdemECliente(ordem, cliente);
+
+        _emailSenderMock
+            .Setup(x => x.EnviarAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ThrowsAsync(
+                new InvalidOperationException(
+                    "SMTP indisponível."));
+
+        var acao =
+            async () =>
+                await _service.EntregarAsync(ordem.Id);
+
+        await acao.Should()
+            .NotThrowAsync();
+
+        ordem.Status.Should()
+            .Be(StatusOrdemServico.Entregue);
+
+        _ordemServicoRepositoryMock.Verify(
+            x => x.AtualizarAsync(ordem),
+            Times.Once);
+
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<InvalidOperationException>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AlterarStatusServicoAsync_Nao_Deve_Notificar_Quando_Cliente_Nao_Existe()
+    {
+        var ordem =
+            CriarOrdemComServico();
+
+        var servico =
+            ordem.Servicos.Single();
+
+        _ordemServicoRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(ordem.Id))
+            .ReturnsAsync(ordem);
+
+        _clienteRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(ordem.ClienteId))
+            .ReturnsAsync((Cliente?)null);
+
+        var acao =
+            async () =>
+                await _service.AlterarStatusServicoAsync(
+                    ordem.Id,
+                    servico.Id,
+                    StatusServico.EmExecucao);
+
+        await acao.Should()
+            .NotThrowAsync();
+
+        _ordemServicoRepositoryMock.Verify(
+            x => x.AtualizarAsync(ordem),
+            Times.Once);
+
+        _emailSenderMock.Verify(
+            x => x.EnviarAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()),
+            Times.Never);
+
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    private void ConfigurarOrdemECliente(
+        OrdemServico ordem,
+        Cliente cliente)
+    {
+        _ordemServicoRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(ordem.Id))
+            .ReturnsAsync(ordem);
+
+        _clienteRepositoryMock
+            .Setup(x =>
+                x.ObterPorIdAsync(cliente.Id))
+            .ReturnsAsync(cliente);
     }
 
     [Fact]
@@ -1670,10 +1909,11 @@ public class OrdemServicoServiceTests
     }
 
     private static OrdemServico
-        CriarOrdemFinalizada()
+        CriarOrdemFinalizada(
+            Guid? clienteId = null)
     {
         var ordem =
-            CriarOrdemComServico();
+            CriarOrdemComServico(clienteId);
 
         var servico =
             ordem.Servicos.Single();

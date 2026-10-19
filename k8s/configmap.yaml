@@ -14,6 +14,10 @@ data:
   DB_PORT: "5432"
   DB_NAME: garagehub
 
+  # Servidor SMTP das notificações por e-mail (Mailpit)
+  Smtp__Host: garagehub-mailpit
+  Smtp__Port: "1025"
+
   # GC de workstation: menor consumo de memória por pod, o que torna
   # o HPA por memória mais previsível com várias réplicas pequenas.
   DOTNET_gcServer: "0"

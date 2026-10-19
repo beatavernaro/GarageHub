@@ -1,9 +1,11 @@
 using Application.Interfaces;
+using Application.Interfaces.Notifications;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Security;
 using Application.Interfaces.Services;
 using Application.Services;
 using Infrastructure.Database;
+using Infrastructure.Notifications;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
@@ -50,6 +52,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
         services.AddScoped<IOrdemServicoService, OrdemServicoService>();
+
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         return services;
     }
 }

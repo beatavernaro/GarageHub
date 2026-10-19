@@ -28,6 +28,7 @@ O objetivo principal do projeto é oferecer uma base estruturada para o gerencia
 - [Como executar o projeto](#-como-executar-o-projeto)
 - [Autenticação e acesso à API](#-autenticação-e-acesso-à-api)
 - [Funcionalidades e fluxos de negócio](#-funcionalidades-e-fluxos-de-negócio)
+- [Notificações por e-mail (Mailpit)](#-notificações-por-e-mail-mailpit)
 - [Arquitetura e Domain-Driven Design](#️-arquitetura-e-domain-driven-design)
 - [Estrutura do projeto](#-estrutura-do-projeto)
 - [Banco de dados e persistência](#️-banco-de-dados-e-persistência)
@@ -153,7 +154,8 @@ O Docker Compose será responsável por:
 - Executar os scripts de criação das tabelas;
 - Executar os dados iniciais (seed);
 - Aguardar o banco ficar pronto (healthcheck) antes de iniciar a API;
-- Configurar a comunicação entre a API e o banco de dados.
+- Configurar a comunicação entre a API e o banco de dados;
+- Iniciar o Mailpit, que recebe os e-mails de notificação enviados pela API.
 
 #### 4. Acessar a API
 
@@ -161,6 +163,7 @@ O Docker Compose será responsável por:
 Swagger:    http://localhost:8080/swagger
 Liveness:   http://localhost:8080/health/live
 Readiness:  http://localhost:8080/health/ready
+Mailpit:    http://localhost:8025   (e-mails enviados pela API)
 ```
 
 #### 5. Encerrar o ambiente
@@ -189,7 +192,7 @@ terraform -chdir=infra apply
 # 2. Criar o arquivo de secrets (não versionado) e definir valores próprios
 cp k8s/secrets.env.example k8s/secrets.env
 
-# 3. Build da imagem e deploy da API e do PostgreSQL
+# 3. Build da imagem e deploy da API, do PostgreSQL e do Mailpit
 bash scripts/deploy-local.sh
 
 # 4. Verificar a aplicação
@@ -197,9 +200,13 @@ bash scripts/smoke-test.sh
 
 # 5. (Opcional) Demonstrar o escalonamento automático
 bash scripts/load-test.sh
+
+# 6. (Opcional) Demonstrar as notificações por e-mail
+kubectl -n garagehub port-forward svc/garagehub-mailpit 8025:8025   # em outro terminal
+bash scripts/demo-notificacao.sh
 ```
 
-A API fica disponível em `http://localhost:30080/swagger`.
+A API fica disponível em `http://localhost:30080/swagger` e, com o port-forward ativo, o Mailpit em `http://localhost:8025`.
 
 Para remover todo o ambiente:
 
@@ -387,6 +394,127 @@ O sistema registra informações temporais durante a execução dos serviços e 
 
 Esses dados permitem consultar indicadores de tempo de execução, incluindo o **tempo médio dos serviços**, oferecendo informações que podem auxiliar a oficina no acompanhamento da eficiência operacional.
 
+## 📧 Notificações por e-mail (Mailpit)
+
+Sempre que o status de uma Ordem de Serviço é alterado com sucesso, o cliente recebe um e-mail com:
+
+- a identificação da Ordem de Serviço;
+- o nome do cliente;
+- o novo status (Aguardando execução, Em execução, Finalizada ou Entregue).
+
+Nos ambientes locais, os e-mails são enviados via SMTP para o **[Mailpit](https://mailpit.axllent.org/)**, que os captura e exibe em uma interface web. Nenhuma mensagem sai para a internet.
+
+### Quando o e-mail é enviado
+
+| Operação | Endpoint | Notifica quando |
+| --- | --- | --- |
+| Alterar o status de um serviço da OS | `PATCH /api/OrdensServico/{id}/servicos/{servicoId}/status` | O status recalculado da OS muda. Por exemplo, o primeiro serviço iniciado leva a OS para *Em execução*, e a finalização do último serviço a leva para *Finalizada* |
+| Entregar a OS | `POST /api/OrdensServico/{id}/entregar` | Sempre, pois a OS passa para *Entregue* |
+
+Se a alteração de um serviço não muda o status da OS (por exemplo, iniciar um segundo serviço com a OS já em execução), nenhum e-mail é enviado. A abertura da OS também não gera notificação, pois não é uma alteração de status.
+
+### Funcionamento
+
+- `IEmailSender` (`Application/Interfaces/Notifications`) é a abstração do envio. O `OrdemServicoService` monta a mensagem e a envia **depois** de persistir a alteração da OS.
+- `SmtpEmailSender` (`Infrastructure/Notifications`) implementa o envio com o `SmtpClient` do próprio .NET, sem dependências adicionais.
+- **Falhas não afetam a OS:** se o envio falhar (servidor SMTP indisponível, timeout, cliente sem e-mail), o erro é registrado em log e a requisição retorna sucesso normalmente.
+- **Timeout curto:** o envio ocorre durante a requisição e é limitado a `Smtp:TimeoutSeconds` (5 segundos por padrão), para que uma indisponibilidade do servidor SMTP não deixe a API aguardando.
+- Não há filas, mensageria nem workers. O envio é síncrono e simples, adequado ao escopo do MVP.
+
+### Configuração
+
+| Chave | Docker Compose | Kubernetes | Padrão (`appsettings.json`) |
+| --- | --- | --- | --- |
+| `Smtp__Host` | `mailpit` | `garagehub-mailpit` | `localhost` |
+| `Smtp__Port` | `1025` | `1025` | `1025` |
+| `Smtp__From` | — | — | `GarageHub <nao-responda@garagehub.local>` |
+| `Smtp__TimeoutSeconds` | — | — | `5` |
+
+### Demonstração
+
+O script `scripts/demo-notificacao.sh` abre uma OS com os dados do seed, altera seu status (*Em execução* → *Finalizada* → *Entregue*) e confirma, pela API do Mailpit, que os três e-mails foram recebidos.
+
+#### Docker Compose
+
+```bash
+docker compose up -d --build
+BASE_URL=http://localhost:8080 bash scripts/demo-notificacao.sh
+```
+
+#### Kubernetes local
+
+```bash
+kubectl -n garagehub port-forward svc/garagehub-mailpit 8025:8025   # em outro terminal
+bash scripts/demo-notificacao.sh
+```
+
+Saída esperada:
+
+```text
+==> E-mails recebidos no Mailpit (http://localhost:8025) para a OS a3fcf707-...
+    contato@xpto.com | GarageHub - Ordem de Serviço a3fcf707-...: Em execução
+    contato@xpto.com | GarageHub - Ordem de Serviço a3fcf707-...: Finalizada
+    contato@xpto.com | GarageHub - Ordem de Serviço a3fcf707-...: Entregue
+==> OK: 3 notificações recebidas. Veja as mensagens em http://localhost:8025
+```
+
+Depois, abra `http://localhost:8025` para ver as mensagens. O fluxo também pode ser feito manualmente pelo Swagger: abra uma OS (`POST /api/OrdensServico`), altere o status de um serviço para `EmExecucao` e confira o e-mail no Mailpit.
+
+Para ver o comportamento em caso de falha, pare o Mailpit (`docker compose stop mailpit`) e altere o status de uma OS. A requisição continua retornando `204`, e o erro aparece em `docker logs garagehub-api`.
+
+### Testes automatizados
+
+| Teste | Arquivo | Verifica |
+| --- | --- | --- |
+| Notificação na mudança de status | `OrdemServicoServiceTests` | O e-mail é enviado ao cliente com o Id da OS, o nome do cliente e o novo status (*Em execução*) |
+| Status da OS sem alteração | `OrdemServicoServiceTests` | Iniciar um segundo serviço com a OS já em execução não envia e-mail |
+| Entrega da OS | `OrdemServicoServiceTests` | O e-mail é enviado com o status *Entregue* |
+| Falha no envio | `OrdemServicoServiceTests` | A exceção do envio não é propagada, a OS é atualizada e o erro é registrado em log (`LogError`) |
+| Cliente não encontrado | `OrdemServicoServiceTests` | Nenhum e-mail é enviado, nenhuma exceção ocorre e um aviso é registrado (`LogWarning`) |
+| Timeout do SMTP | `SmtpEmailSenderTests` | Com um servidor que aceita a conexão e não responde, o envio é interrompido após o timeout configurado (1 s no teste) |
+| Configuração ausente | `SmtpEmailSenderTests` | Sem `Smtp:Host`, o envio falha com mensagem clara |
+| Fluxo completo via API | `FluxoOrdemServicoIntegrationTests` | Alterar o status de um serviço pelo endpoint gera a notificação. Nesse teste, o envio SMTP é substituído por um fake em memória (`FakeEmailSender`) |
+
+### Resultado da validação
+
+| Ambiente | Cenário | Resultado |
+| --- | --- | --- |
+| Testes automatizados | `dotnet test` | 369 testes aprovados e 0 falhas. Cobertura de linhas de 97,93% |
+| Docker Compose | `scripts/demo-notificacao.sh` | 3 e-mails recebidos no Mailpit (*Em execução*, *Finalizada*, *Entregue*) |
+| Docker Compose | Mailpit parado | Todas as requisições retornaram sucesso, a OS foi atualizada e o erro foi registrado no log da API |
+| Kubernetes (kind) | `scripts/deploy-local.sh` | Rollouts de `garagehub-db`, `garagehub-mailpit` e `garagehub-api` concluídos |
+| Kubernetes (kind) | `scripts/demo-notificacao.sh` via port-forward | 3 e-mails recebidos no Mailpit do cluster |
+
+E-mail recebido no Mailpit:
+
+```text
+Assunto: GarageHub - Ordem de Serviço f0a5d844-42b6-4b0e-ae45-1c1bcd077c3d: Entregue
+
+Olá, Cliente Fluxo OS.
+
+O status da sua ordem de serviço foi atualizado.
+
+Ordem de Serviço: f0a5d844-42b6-4b0e-ae45-1c1bcd077c3d
+Cliente: Cliente Fluxo OS
+Novo status: Entregue
+
+GarageHub
+```
+
+Log da API com o Mailpit indisponível:
+
+```text
+fail: Application.Services.OrdemServicoService[0]
+      Falha ao enviar a notificação de alteração de status da ordem de serviço 46c74bea-2548-498b-a970-9727010a8c56.
+```
+
+### Limitações
+
+- O envio é síncrono e ocorre dentro da requisição. Com o servidor SMTP lento ou inacessível, a resposta pode demorar até o timeout configurado.
+- Não há reenvio: uma notificação que falhou fica apenas registrada em log.
+- O Mailpit guarda as mensagens em memória, então elas se perdem quando o container ou o pod é recriado.
+- No Kubernetes, a interface do Mailpit não fica exposta fora do cluster e é acessada via `kubectl port-forward`.
+
 ## 🏗️ Arquitetura e Domain-Driven Design
 
 O GarageHub foi desenvolvido como um **monólito modular**, utilizando princípios de **Clean Architecture** e **Domain-Driven Design (DDD)** para organizar as responsabilidades da aplicação e manter as regras de negócio independentes de detalhes de infraestrutura.
@@ -434,6 +562,7 @@ Entre suas responsabilidades estão:
 - Scripts SQL;
 - Criação do schema do banco;
 - Seed dos dados iniciais;
+- Envio de e-mails via SMTP (notificações de status da OS);
 - Configuração das dependências de infraestrutura.
 
 As abstrações dos repositórios permanecem na camada de aplicação, enquanto suas implementações ficam na infraestrutura, reduzindo o acoplamento dos casos de uso com a tecnologia de persistência.
@@ -576,6 +705,7 @@ Principais elementos:
 ```text
 Infrastructure/
 ├── Database/
+├── Notifications/
 ├── Repositories/
 ├── SQL/
 └── DependencyInjection/
@@ -840,6 +970,7 @@ O projeto possui testes unitários e de integração, com cobertura superior ao 
 - **kind (Kubernetes in Docker)** — cluster Kubernetes local executado em containers Docker.
 - **Kustomize** (embutido no `kubectl`) — composição dos manifestos e geração do Secret a partir de um arquivo não versionado.
 - **metrics-server** — coleta as métricas de CPU e memória utilizadas pelo HPA.
+- **Mailpit** — servidor SMTP de testes que captura e exibe os e-mails de notificação.
 
 ### Infraestrutura como código
 
@@ -875,6 +1006,7 @@ Os pipelines executados no GitHub validam o projeto a cada alteração: verifica
 | Cobertura | Coverlet |
 | Containers | Docker, Docker Compose |
 | Orquestração | Kubernetes (kind), Kustomize, metrics-server |
+| E-mail (testes) | Mailpit (SMTP) |
 | Infraestrutura como código | Terraform |
 | Registro de imagens | GitHub Container Registry (GHCR) |
 | Qualidade | SonarQube Cloud |
@@ -1156,6 +1288,7 @@ O ambiente contém:
 
 - Container da API GarageHub;
 - Container PostgreSQL, com healthcheck (`pg_isready`);
+- Container Mailpit, que recebe os e-mails da API (SMTP na porta 1025 e interface em `http://localhost:8025`);
 - Rede utilizada para comunicação entre os serviços;
 - Volume para persistência dos dados;
 - Configurações necessárias para conexão da API com o banco.
@@ -1346,13 +1479,15 @@ kubectl apply -k k8s/
 | Arquivo | Recurso | Responsabilidade |
 | --- | --- | --- |
 | `kustomization.yaml` | — | Ponto de entrada: namespace, lista de recursos, geração do Secret e tag da imagem |
-| `configmap.yaml` | ConfigMap `garagehub-config` | Configurações não sensíveis: ambiente, emissor e audiência do JWT, host, porta e nome do banco |
+| `configmap.yaml` | ConfigMap `garagehub-config` | Configurações não sensíveis: ambiente, emissor e audiência do JWT, host, porta e nome do banco, servidor SMTP |
 | `secrets.env.example` | Secret `garagehub-secrets` | Modelo do `secrets.env` (não versionado), convertido em Secret pelo `secretGenerator` |
 | `postgres-statefulset.yaml` | StatefulSet `garagehub-db` | PostgreSQL 18 com volume persistente de 1 Gi e scripts de inicialização |
 | `postgres-service.yaml` | Service `garagehub-db` (headless) | DNS estável do banco, acessível apenas dentro do cluster |
 | `api-deployment.yaml` | Deployment `garagehub-api` | Pods da API, com probes, requests e limits |
 | `api-service.yaml` | Service `garagehub-api` (NodePort 30080) | Exposição da API fora do cluster |
 | `api-hpa.yaml` | HorizontalPodAutoscaler `garagehub-api` | Escalonamento automático da API de 1 a 5 réplicas |
+| `mailpit-deployment.yaml` | Deployment `garagehub-mailpit` | Servidor SMTP de testes que captura as notificações por e-mail (mensagens em memória) |
+| `mailpit-service.yaml` | Service `garagehub-mailpit` (ClusterIP) | SMTP (1025) para a API e interface web (8025), acessível via `kubectl port-forward` |
 
 Os manifestos dependem dos recursos criados pelo Terraform: namespace `garagehub`, StorageClass `garagehub-db` e ConfigMap `garagehub-db-init`.
 
@@ -1413,6 +1548,7 @@ kubectl -n garagehub logs -l app.kubernetes.io/name=garagehub-api -f    # logs d
 kubectl -n garagehub top pods                                            # consumo de CPU e memória
 kubectl -n garagehub rollout restart deployment/garagehub-api            # reinicia a API
 kubectl -n garagehub exec -it garagehub-db-0 -- psql -U postgres -d garagehub
+kubectl -n garagehub port-forward svc/garagehub-mailpit 8025:8025        # interface do Mailpit
 ```
 
 ### Resiliência
@@ -1504,6 +1640,8 @@ Eles validam comportamentos como:
 - Execução e finalização de serviços;
 - Comportamento das Ordens de Serviço;
 - Abertura direta da Ordem de Serviço;
+- Notificação por e-mail na alteração de status da OS, inclusive quando o envio falha (a OS é atualizada e o erro registrado em log);
+- Timeout do envio SMTP quando o servidor não responde;
 - Confirmação e reversão das transações da Unit of Work;
 - Casos de uso da camada Application;
 - Tratamento de cenários inválidos e exceções esperadas.
@@ -1526,6 +1664,7 @@ Entre os fluxos cobertos estão:
 - Criação e consulta de orçamentos;
 - Aprovação de orçamento;
 - Geração automática da Ordem de Serviço;
+- Envio da notificação ao alterar o status de um serviço da OS (com o envio SMTP substituído por um fake em memória);
 - Health checks de liveness e readiness;
 - Integração entre API, Application, Domain, Infrastructure e PostgreSQL.
 

@@ -16,10 +16,25 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-garagehub};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
       Jwt__Key: "${JWT_KEY:-GarageHub-Development-Jwt-Key-2026-FIAP-Local-Environment}"
+      Smtp__Host: mailpit
+      Smtp__Port: "1025"
 
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Servidor SMTP de testes: captura os e-mails enviados pela API
+  # e os exibe na interface web em http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+
+    container_name: garagehub-mailpit
+
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   db:
     image: postgres:18

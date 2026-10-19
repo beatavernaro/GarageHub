@@ -18,6 +18,7 @@ public class FluxoOrdemServicoIntegrationTests
     : IClassFixture<GarageHubWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly FakeEmailSender _emailSender;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -32,6 +33,7 @@ public class FluxoOrdemServicoIntegrationTests
         GarageHubWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
+        _emailSender = factory.EmailSender;
     }
 
     [Fact]
@@ -155,6 +157,25 @@ public class FluxoOrdemServicoIntegrationTests
         ordem.Servicos.Single()
             .ServicoId.Should()
             .Be(servico.Id);
+
+        // iniciar o serviço altera o status da OS e notifica o cliente por e-mail
+        var statusResponse =
+            await _client.PatchAsJsonAsync(
+                $"/api/OrdensServico/{ordem.Id}/servicos/{ordem.Servicos.Single().Id}/status",
+                StatusServico.EmExecucao,
+                JsonOptions);
+
+        statusResponse.StatusCode
+            .Should()
+            .Be(HttpStatusCode.NoContent);
+
+        _emailSender.Enviados
+            .Should()
+            .ContainSingle(x =>
+                x.Destinatario == cliente.Email &&
+                x.Corpo.Contains(ordem.Id.ToString()) &&
+                x.Corpo.Contains(cliente.Nome) &&
+                x.Corpo.Contains("Novo status: Em execução"));
     }
 
     private async Task AutenticarAsync()

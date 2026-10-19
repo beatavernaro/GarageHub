@@ -1,11 +1,13 @@
 using Application.DTOs.Orcamento;
 using Application.DTOs.OrdemServico;
 using Application.Interfaces;
+using Application.Interfaces.Notifications;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
@@ -17,7 +19,9 @@ public class OrdemServicoService(
     IServicoRepository servicoRepository,
     IItemEstoqueRepository itemEstoqueRepository,
     IUnitOfWork unitOfWork,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IEmailSender emailSender,
+    ILogger<OrdemServicoService> logger)
     : IOrdemServicoService
 {
     private readonly IOrdemServicoRepository _ordemServicoRepository = ordemServicoRepository;
@@ -28,6 +32,8 @@ public class OrdemServicoService(
     private readonly IItemEstoqueRepository _itemEstoqueRepository = itemEstoqueRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IEmailSender _emailSender = emailSender;
+    private readonly ILogger<OrdemServicoService> _logger = logger;
 
     private static readonly StatusOrdemServico[] StatusEmAndamento =
     [
@@ -427,6 +433,8 @@ public class OrdemServicoService(
             ?? throw new DomainException(
                 "Serviço não encontrado na ordem de serviço.");
 
+        var statusAnterior = ordemServico.Status;
+
         servico.AlterarStatus(
             status,
             _currentUser.Id);
@@ -439,6 +447,10 @@ public class OrdemServicoService(
 
         await _ordemServicoRepository
             .AtualizarAsync(ordemServico);
+
+        // Notifica apenas quando o status da OS (e não só o do serviço) mudou
+        if (ordemServico.Status != statusAnterior)
+            await NotificarAlteracaoStatusAsync(ordemServico);
     }
 
     public async Task EntregarAsync(Guid id)
@@ -451,6 +463,62 @@ public class OrdemServicoService(
 
         await _ordemServicoRepository
             .AtualizarAsync(ordemServico);
+
+        await NotificarAlteracaoStatusAsync(ordemServico);
+    }
+
+    // Executada após a persistência: uma falha no envio é registrada em log
+    // e não desfaz nem impede a atualização da ordem de serviço
+    private async Task NotificarAlteracaoStatusAsync(
+        OrdemServico ordemServico)
+    {
+        try
+        {
+            var cliente =
+                await _clienteRepository.ObterPorIdAsync(
+                    ordemServico.ClienteId);
+
+            if (string.IsNullOrWhiteSpace(cliente?.Email))
+            {
+                _logger.LogWarning(
+                    "Notificação da ordem de serviço {OrdemServicoId} não enviada: cliente ou e-mail não encontrado.",
+                    ordemServico.Id);
+
+                return;
+            }
+
+            var status =
+                FormatarStatusOrdemServico(
+                    ordemServico.Status);
+
+            var assunto =
+                $"GarageHub - Ordem de Serviço {ordemServico.Id}: {status}";
+
+            var corpo =
+                $"""
+                Olá, {cliente.Nome}.
+
+                O status da sua ordem de serviço foi atualizado.
+
+                Ordem de Serviço: {ordemServico.Id}
+                Cliente: {cliente.Nome}
+                Novo status: {status}
+
+                GarageHub
+                """;
+
+            await _emailSender.EnviarAsync(
+                cliente.Email,
+                assunto,
+                corpo);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Falha ao enviar a notificação de alteração de status da ordem de serviço {OrdemServicoId}.",
+                ordemServico.Id);
+        }
     }
 
     private async Task<OrdemServico> ObterOrdemServicoAsync(

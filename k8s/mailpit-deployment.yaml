@@ -1,0 +1,48 @@
+# Mailpit: servidor SMTP de testes que captura os e-mails enviados pela API
+# (notificações de alteração de status da Ordem de Serviço).
+# As mensagens ficam em memória e se perdem quando o pod é recriado.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garagehub-mailpit
+  labels:
+    app.kubernetes.io/name: garagehub-mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garagehub-mailpit
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garagehub-mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.27.0
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: http
+              containerPort: 8025
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
