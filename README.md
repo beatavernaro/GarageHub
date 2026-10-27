@@ -6,7 +6,7 @@
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-kind-326CE5?logo=kubernetes&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-1.16-844FBA?logo=terraform&logoColor=white)
 [![CI/CD](https://github.com/beatavernaro/GarageHub/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/beatavernaro/GarageHub/actions/workflows/ci-cd.yml)
-![Tests](https://img.shields.io/badge/Tests-362%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-369%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/Coverage-96.7%25-brightgreen)
 ![Quality Gate](https://img.shields.io/badge/Quality%20Gate-Passed-brightgreen)
 ![Security](https://img.shields.io/badge/Security-A-brightgreen)
@@ -113,7 +113,7 @@ Os dois ambientes podem ser executados ao mesmo tempo, pois utilizam portas dife
 
 ### Opção 1: Docker Compose
 
-A aplicação e o banco de dados PostgreSQL são executados em containers, e os scripts de criação e carga inicial do banco são executados automaticamente.
+A aplicação, o banco de dados PostgreSQL e o Mailpit são executados em containers, e os scripts de criação e carga inicial do banco são executados automaticamente.
 
 #### Pré-requisitos
 
@@ -230,12 +230,14 @@ POST /api/Auth/login
 
 Para facilitar a execução e avaliação do projeto, o banco de dados é inicializado com usuários de desenvolvimento através do script de seed.
 
-### Usuário administrador
+### Usuários de desenvolvimento
 
-```text
-E-mail: admin@garagehub.com
-Senha: Admin@123
-```
+| Perfil | E-mail | Senha |
+| --- | --- | --- |
+| Administrador | `admin@garagehub.com` | `Admin@123` |
+| Atendente | `atendente@garagehub.com` | `Atendente@123` |
+
+Os dois usuários possuem o mesmo nível de acesso aos endpoints protegidos.
 
 > As credenciais acima são destinadas exclusivamente ao ambiente acadêmico e de desenvolvimento. Em um ambiente de produção, credenciais e secrets não devem ser armazenados diretamente em arquivos versionados no repositório.
 
@@ -294,6 +296,7 @@ O sistema permite:
 - Identificação por placa;
 - Registro de marca, modelo, ano, cor, chassi e quilometragem;
 - Atualização dos dados do veículo;
+- Inativação de veículos;
 - Consulta dos veículos cadastrados.
 
 ### Serviços
@@ -339,6 +342,8 @@ O fluxo permite:
 - Rejeição;
 - Cancelamento;
 - Expiração do orçamento.
+
+O orçamento expira **15 dias após o envio ao cliente**, caso ainda esteja aguardando a decisão. A expiração é verificada sempre que o orçamento é consultado ou recebe uma operação, de modo que um orçamento vencido passa para o status `Expirado` e não pode mais ser aprovado.
 
 Os itens adicionados ao orçamento mantêm um **snapshot das informações relevantes**, preservando os dados utilizados naquele momento mesmo que o cadastro original seja posteriormente alterado.
 
@@ -408,7 +413,7 @@ Nos ambientes locais, os e-mails são enviados via SMTP para o **[Mailpit](https
 
 | Operação | Endpoint | Notifica quando |
 | --- | --- | --- |
-| Alterar o status de um serviço da OS | `PATCH /api/OrdensServico/{id}/servicos/{servicoId}/status` | O status recalculado da OS muda. Por exemplo, o primeiro serviço iniciado leva a OS para *Em execução*, e a finalização do último serviço a leva para *Finalizada* |
+| Alterar o status de um serviço da OS | `PATCH /api/OrdensServico/{id}/servicos/{ordemServicoServicoId}/status` | O status recalculado da OS muda. Por exemplo, o primeiro serviço iniciado leva a OS para *Em execução*, e a finalização do último serviço a leva para *Finalizada* |
 | Entregar a OS | `POST /api/OrdensServico/{id}/entregar` | Sempre, pois a OS passa para *Entregue* |
 
 Se a alteração de um serviço não muda o status da OS (por exemplo, iniciar um segundo serviço com a OS já em execução), nenhum e-mail é enviado. A abertura da OS também não gera notificação, pois não é uma alteração de status.
@@ -479,7 +484,7 @@ Para ver o comportamento em caso de falha, pare o Mailpit (`docker compose stop 
 
 | Ambiente | Cenário | Resultado |
 | --- | --- | --- |
-| Testes automatizados | `dotnet test` | 369 testes aprovados e 0 falhas. Cobertura de linhas de 97,93% |
+| Testes automatizados | `dotnet test` | 369 testes aprovados e 0 falhas. Cobertura de linhas de 97,93% medida pelo Coverlet (no SonarQube Cloud, 96,7%) |
 | Docker Compose | `scripts/demo-notificacao.sh` | 3 e-mails recebidos no Mailpit (*Em execução*, *Finalizada*, *Entregue*) |
 | Docker Compose | Mailpit parado | Todas as requisições retornaram sucesso, a OS foi atualizada e o erro foi registrado no log da API |
 | Kubernetes (kind) | `scripts/deploy-local.sh` | Rollouts de `garagehub-db`, `garagehub-mailpit` e `garagehub-api` concluídos |
@@ -638,12 +643,13 @@ A estrutura principal do GarageHub é:
 ```text
 GarageHub/
 ├── .github/
-│   └── workflows/
-│       └── ci-cd.yml        # Build, testes, análise SonarQube, imagem (GHCR) e deploy no Kubernetes
+│   └── workflows/           # Build, testes, análise SonarQube, imagem (GHCR) e deploy no Kubernetes
 │
+├── docs/                    # Especificação OpenAPI da API
+├── Documentacao/            # Documentação DDD e documento de entrega
 ├── infra/                   # Terraform: cluster kind, metrics-server e infraestrutura do banco
 ├── k8s/                     # Manifestos Kubernetes (kustomize)
-├── scripts/                 # Deploy local, smoke test e teste de carga
+├── scripts/                 # Deploy local, smoke test, teste de carga e demonstração das notificações
 │
 ├── src/
 │   ├── Api/
@@ -673,7 +679,9 @@ Domain/
 ├── Entities/
 ├── Enums/
 ├── Exceptions/
-└── Validators/
+├── Helpers/
+├── Validators/
+└── ValueObjects/
 ```
 
 Nesta camada estão entidades como `Cliente`, `Veiculo`, `Servico`, `ItemEstoque`, `Orcamento` e `OrdemServico`, juntamente com suas regras e comportamentos de domínio.
@@ -688,7 +696,9 @@ Principais elementos:
 Application/
 ├── DTOs/
 ├── Interfaces/
+│   ├── Notifications/
 │   ├── Repositories/
+│   ├── Security/
 │   └── Services/
 └── Services/
 ```
@@ -704,10 +714,12 @@ Principais elementos:
 ```text
 Infrastructure/
 ├── Database/
+├── DependencyInjection/
+├── Mappers/
 ├── Notifications/
 ├── Repositories/
-├── SQL/
-└── DependencyInjection/
+├── Security/
+└── SQL/
 ```
 
 Os repositórios implementam os contratos definidos pela aplicação e utilizam **Dapper** para comunicação com o PostgreSQL.
@@ -725,9 +737,9 @@ Principais elementos:
 ```text
 Api/
 ├── Controllers/
+├── HealthChecks/
 ├── Middleware/
-├── Security/
-└── Program.cs
+└── Security/
 ```
 
 Os controllers disponibilizam os recursos através da API REST, enquanto os componentes de segurança são responsáveis pela integração com a autenticação JWT.
@@ -776,7 +788,7 @@ flowchart LR
 
     subgraph app["Application"]
         svc["Application Services"]
-        contratos["Interfaces<br/>repositórios · Unit of Work · segurança"]
+        contratos["Interfaces<br/>repositórios · Unit of Work · segurança · notificações"]
         dtos["DTOs"]
     end
 
@@ -790,9 +802,11 @@ flowchart LR
         sql["Consultas SQL"]
         uow["DbSession (Unit of Work)"]
         seg["JWT e BCrypt"]
+        smtp["SmtpEmailSender"]
     end
 
     db[("PostgreSQL")]
+    mailpit[("Mailpit (SMTP)")]
 
     cliente --> ctrl
     cliente --> hc
@@ -803,6 +817,8 @@ flowchart LR
     svc --> contratos
     repo -. implementa .-> contratos
     seg -. implementa .-> contratos
+    smtp -. implementa .-> contratos
+    smtp --> mailpit
     repo --> sql
     repo --> uow
     uow --> db
@@ -825,7 +841,9 @@ A escolha também está relacionada às características do domínio do GarageHu
 - Orçamentos e seus itens;
 - Ordens de Serviço e seus serviços;
 - Serviços, peças e insumos;
-- Usuários e registros de auditoria.
+- Usuários e o registro de quem criou e alterou cada entidade.
+
+Não há uma tabela de auditoria separada. As próprias tabelas possuem as colunas `criado_por_id`, `data_criacao`, `alterado_por_id` e `data_alteracao`, preenchidas com o usuário identificado pelo token JWT.
 
 O uso de um banco relacional permite representar essas relações de forma explícita através de chaves primárias, chaves estrangeiras, constraints e transações.
 
@@ -939,11 +957,17 @@ O GarageHub foi desenvolvido utilizando tecnologias voltadas ao ecossistema .NET
 - **C#** — linguagem principal utilizada no desenvolvimento da aplicação.
 - **.NET 10** — plataforma utilizada para construção e execução do projeto.
 - **ASP.NET Core** — framework utilizado para disponibilização da API REST.
-- **Swagger / OpenAPI** — documentação e interface para exploração dos endpoints da API.
+- **Swagger / OpenAPI** — documentação e interface para exploração dos endpoints da API. A especificação é gerada pelo `Microsoft.AspNetCore.OpenApi` e exibida pelo Swagger UI (`Swashbuckle.AspNetCore.SwaggerUI`).
+
+### Validação
+
+- **FluentValidation** — utilizado nos validadores do domínio para definir as regras de validação das entidades.
+- **Elekto.BrazilianDocuments** — utilizado na validação de CPF e CNPJ.
 
 ### Banco de dados e persistência
 
 - **PostgreSQL** — banco de dados relacional utilizado para persistência das informações.
+- **Npgsql** — driver ADO.NET utilizado para conexão com o PostgreSQL.
 - **Dapper** — micro ORM utilizado para execução das consultas SQL e mapeamento dos dados.
 
 ### Segurança
@@ -964,8 +988,8 @@ O projeto possui testes unitários e de integração, com cobertura superior ao 
 ### Containers e orquestração
 
 - **Docker** — utilizado para criar uma imagem reproduzível da aplicação.
-- **Docker Compose** — responsável por orquestrar a API e o PostgreSQL, permitindo inicializar todo o ambiente com um único comando.
-- **Kubernetes** — orquestração da API e do PostgreSQL, com escalabilidade automática da API.
+- **Docker Compose** — responsável por orquestrar a API, o PostgreSQL e o Mailpit, permitindo inicializar todo o ambiente com um único comando.
+- **Kubernetes** — orquestração da API, do PostgreSQL e do Mailpit, com escalabilidade automática da API.
 - **kind (Kubernetes in Docker)** — cluster Kubernetes local executado em containers Docker.
 - **Kustomize** (embutido no `kubectl`) — composição dos manifestos e geração do Secret a partir de um arquivo não versionado.
 - **metrics-server** — coleta as métricas de CPU e memória utilizadas pelo HPA.
@@ -996,10 +1020,11 @@ Os pipelines executados no GitHub validam o projeto a cada alteração: verifica
 | Plataforma | .NET 10 |
 | API | ASP.NET Core |
 | Banco de dados | PostgreSQL |
-| Persistência | Dapper |
+| Persistência | Dapper, Npgsql |
 | Autenticação | JWT |
 | Senhas | BCrypt |
 | Documentação da API | Swagger / OpenAPI |
+| Validação | FluentValidation, Elekto.BrazilianDocuments |
 | Testes | xUnit, Moq, FluentAssertions |
 | Testes de integração | Microsoft.AspNetCore.Mvc.Testing |
 | Cobertura | Coverlet |
@@ -1044,12 +1069,12 @@ Responsável pelo gerenciamento dos clientes da oficina.
 
 | Método | Endpoint | Descrição | Autenticação |
 | --- | --- | --- | --- |
-| `GET` | `/api/Clientes` | Lista os clientes | JWT |
-| `GET` | `/api/Clientes/{id}` | Consulta um cliente pelo ID | JWT |
-| `GET` | `/api/Clientes/documento/{documento}` | Consulta um cliente pelo CPF/CNPJ | JWT |
-| `POST` | `/api/Clientes` | Cadastra um cliente | JWT |
-| `PUT` | `/api/Clientes/{id}` | Atualiza um cliente | JWT |
-| `PATCH` | `/api/Clientes/{id}/inativar` | Inativa um cliente | JWT |
+| `GET` | `/api/clientes` | Lista os clientes | JWT |
+| `GET` | `/api/clientes/{id}` | Consulta um cliente pelo ID | JWT |
+| `GET` | `/api/clientes/documento/{documento}` | Consulta um cliente pelo CPF/CNPJ | JWT |
+| `POST` | `/api/clientes` | Cadastra um cliente | JWT |
+| `PUT` | `/api/clientes/{id}` | Atualiza um cliente | JWT |
+| `PATCH` | `/api/clientes/{id}/inativar` | Inativa um cliente | JWT |
 
 ### Veículos
 
@@ -1338,7 +1363,7 @@ O uso de `-v` remove os volumes e, consequentemente, os dados armazenados anteri
 A infraestrutura da Fase 2 é dividida em duas camadas com responsabilidades separadas:
 
 - **Terraform (`infra/`)** provisiona a plataforma: o cluster Kubernetes, o metrics-server e a infraestrutura do banco de dados;
-- **Manifestos (`k8s/`)** descrevem as cargas de trabalho: a API, o PostgreSQL, seus Services, configurações, secrets e o escalonamento automático.
+- **Manifestos (`k8s/`)** descrevem as cargas de trabalho: a API, o PostgreSQL, o Mailpit, seus Services, configurações, secrets e o escalonamento automático.
 
 ### Diagrama da infraestrutura provisionada
 
@@ -1362,6 +1387,8 @@ flowchart TB
                 sts["StatefulSet garagehub-db<br/>postgres:18"]
                 init["ConfigMap garagehub-db-init<br/>01-schema.sql · 02-seed.sql<br/>(Terraform)"]
                 pvc[("PVC data-garagehub-db-0<br/>1 Gi · StorageClass garagehub-db<br/>(Terraform)")]
+                svcmail["Service garagehub-mailpit<br/>ClusterIP · SMTP 1025 · web 8025"]
+                mail["Deployment garagehub-mailpit<br/>axllent/mailpit"]
             end
         end
     end
@@ -1375,6 +1402,8 @@ flowchart TB
     cm --> dep
     sec --> dep
     sec --> sts
+    dep -. e-mails .-> svcmail
+    svcmail --> mail
     ms -. métricas .-> hpa
     hpa -. escala .-> dep
 ```
@@ -1387,7 +1416,8 @@ Os recursos marcados com **(Terraform)** são criados por `infra/`. Os demais s�
 2. O Service `garagehub-api` (NodePort) distribui a requisição entre os pods prontos da API.
 3. A API acessa o PostgreSQL pelo Service headless `garagehub-db`.
 4. Os dados ficam no volume persistente do StatefulSet, que sobrevive à recriação do pod do banco.
-5. O HPA consulta as métricas do metrics-server e ajusta o número de réplicas da API conforme a carga.
+5. Quando o status de uma Ordem de Serviço muda, a API envia o e-mail de notificação ao Mailpit pelo Service `garagehub-mailpit`.
+6. O HPA consulta as métricas do metrics-server e ajusta o número de réplicas da API conforme a carga.
 
 ## 🧱 Infraestrutura com Terraform
 
@@ -1542,7 +1572,7 @@ openssl rand -hex 32   # JWT_KEY (mínimo de 32 caracteres)
 bash scripts/deploy-local.sh
 ```
 
-O script verifica os pré-requisitos, constrói a imagem `garagehub-api:local`, carrega a imagem nos nós do kind, aplica os manifestos com `kubectl apply -k k8s/` e aguarda o PostgreSQL e a API ficarem prontos. Em um novo deploy, os pods da API são reiniciados para utilizar a imagem atualizada.
+O script verifica os pré-requisitos, constrói a imagem `garagehub-api:local`, carrega a imagem nos nós do kind, aplica os manifestos com `kubectl apply -k k8s/` e aguarda o PostgreSQL, o Mailpit e a API ficarem prontos. Em um novo deploy, os pods da API são reiniciados para utilizar a imagem atualizada.
 
 **3. Verificar a aplicação:**
 
@@ -1818,7 +1848,7 @@ flowchart LR
         tf["terraform apply<br/>cluster kind + metrics-server + infra do banco"]
         load["docker pull da imagem publicada<br/>kind load"]
         secrets["k8s/secrets.env gerado<br/>a partir dos GitHub Secrets"]
-        apply["kubectl apply -k k8s/<br/>aguarda rollout do banco e da API"]
+        apply["kubectl apply -k k8s/<br/>aguarda rollout do banco, do Mailpit e da API"]
         smoke["smoke test"]
         hpa["demonstração do HPA"]
         destroy["terraform destroy"]
@@ -1832,7 +1862,7 @@ flowchart LR
 | --- | --- | --- |
 | `build-test` | Todos os eventos | PostgreSQL 18 como serviço, execução do schema e do seed, restore, build, testes unitários e de integração (com cobertura mínima de 80%) e envio da análise ao SonarQube Cloud |
 | `image` | Todos os eventos | Build da imagem com cache. Em pull requests, apenas valida o Dockerfile. Na `main`, publica no GHCR com as tags `sha-<commit>` e `latest` |
-| `deploy` | Push na `main` e execução manual | `terraform apply` (cluster kind no runner), carga da imagem publicada, geração do Secret a partir dos GitHub Secrets, `kubectl apply -k`, aguardo do rollout, smoke test, demonstração do HPA e `terraform destroy` |
+| `deploy` | Push na `main` e execução manual | `terraform apply` (cluster kind no runner), carga da imagem publicada, geração do Secret a partir dos GitHub Secrets, `kubectl apply -k`, aguardo do rollout do banco, do Mailpit e da API, smoke test, demonstração do HPA e `terraform destroy` |
 
 A etapa de demonstração do HPA é informativa: como o resultado depende dos recursos do runner, ela não reprova o pipeline. Os valores do HPA e o consumo dos pods ficam registrados no log da etapa **Demonstração do HPA** do job `deploy`.
 

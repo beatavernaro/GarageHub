@@ -15,7 +15,7 @@ README.md
 tests/
 Documentacao/
 coverage-report/
-ApiDoc.json
+docs/
 k8s/
 infra/
 scripts/
